@@ -349,7 +349,29 @@
   }
 
   // --- CNMC API ---
-  const CNMC_API_BASE = 'https://comparador.cnmc.gob.es/api/publico/';
+  // Proxy needed: CNMC nginx blocks requests with Origin header (403)
+  // Deploy proxy-worker.js to Cloudflare Workers and set URL here
+  // For local dev: use direct URL (works without Origin from file://)
+  const PROXY_BASE = 'https://ahorraluz-proxy.lewricka.workers.dev/api/publico/';
+  const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
+
+  async function fetchFromApi(path) {
+    // Try proxy first, fall back to direct
+    try {
+      const response = await fetch(`${PROXY_BASE}${path}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (response.ok) return response;
+    } catch (e) {
+      console.warn('Proxy failed, trying direct:', e.message);
+    }
+
+    // Direct fallback (works from same-origin or curl, not from cross-origin browser)
+    const response = await fetch(`${CNMC_DIRECT}${path}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    return response;
+  }
 
   async function fetchOffers(params) {
     const qs = Object.entries(params)
@@ -357,18 +379,14 @@
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
 
-    const fullUrl = `${CNMC_API_BASE}ofertas/electricidad?${qs}`;
-    console.log('CNMC API URL:', fullUrl);
+    const path = `ofertas/electricidad?${qs}`;
+    console.log('Fetching offers, params count:', Object.keys(params).length);
 
-    const response = await fetch(fullUrl, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    const response = await fetchFromApi(path);
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      throw new Error(`CNMC API error ${response.status}: ${body.slice(0, 200)}`);
+      throw new Error(`API error ${response.status}: ${body.slice(0, 200)}`);
     }
 
     return response.json();
@@ -378,9 +396,7 @@
     if (!code) return 'Tu comercializadora actual';
     try {
       const cleanCode = code.replace('R2-', '');
-      const response = await fetch(`${CNMC_API_BASE}nombrecodigo/${cleanCode}`, {
-        headers: { 'Accept': 'application/json' },
-      });
+      const response = await fetchFromApi(`nombrecodigo/${cleanCode}`);
       if (response.ok) {
         const name = await response.text();
         return name.replace(/"/g, '') || code;
