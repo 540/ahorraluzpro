@@ -116,12 +116,14 @@
   // --- QR Success ---
   function onQrSuccess(decodedText) {
     stopScanner();
+    console.log('QR decoded:', decodedText);
 
     // Validate it's a CNMC comparador URL
     if (!decodedText.includes('comparador.cnmc.gob.es') && !decodedText.includes('cnmc.es')) {
       showError(
         'Este QR no es de una factura de luz',
-        'El codigo QR debe ser el que aparece en tu factura de electricidad. Es una URL al comparador de la CNMC.'
+        'El codigo QR debe ser el que aparece en tu factura de electricidad. Es una URL al comparador de la CNMC.',
+        { qrContent: decodedText }
       );
       return;
     }
@@ -300,7 +302,7 @@
       potenciaAutoconsumo: 0,
       revisionPrecios: 2,
       autoconsumo: false,
-      importe: 0,
+      importe: qrData.importeTotal || 0,
       mecanismoAjuste: 0,
       mecanismoAjusteIVA: 0,
       importeMecanismoAjustePunta: 0,
@@ -351,18 +353,22 @@
 
   async function fetchOffers(params) {
     const qs = Object.entries(params)
-      .filter(([, v]) => v != null)
+      .filter(([, v]) => v != null && v !== '')
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
 
-    const response = await fetch(`${CNMC_API_BASE}ofertas/electricidad?${qs}`, {
+    const fullUrl = `${CNMC_API_BASE}ofertas/electricidad?${qs}`;
+    console.log('CNMC API URL:', fullUrl);
+
+    const response = await fetch(fullUrl, {
       headers: {
         'Accept': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`CNMC API error: ${response.status}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`CNMC API error ${response.status}: ${body.slice(0, 200)}`);
     }
 
     return response.json();
@@ -398,10 +404,12 @@
       let qrData;
       try {
         qrData = parseQrUrl(url);
+        console.log('Parsed QR data:', JSON.stringify(qrData, null, 2));
       } catch (e) {
         showError(
           'QR no valido',
-          'El codigo QR no contiene datos validos de una factura de luz. Asegurate de escanear el QR correcto.'
+          'El codigo QR no contiene datos validos de una factura de luz. Asegurate de escanear el QR correcto.',
+          { error: e.message, qrUrl: url, stack: e.stack }
         );
         return;
       }
