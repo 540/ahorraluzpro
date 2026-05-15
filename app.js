@@ -694,6 +694,18 @@
     }
   }
 
+  // --- Build feature tags HTML ---
+  function buildFeatureTags(offer) {
+    let html = '';
+    if (offer.isGreen) {
+      html += '<span class="feature-tag tag-green">\u{1F33F} Verde</span>';
+    }
+    if (offer.hasPenalty === false || offer.hasPenalty === 0) {
+      html += '<span class="feature-tag tag-no-penalty">\u{1F513} Sin permanencia</span>';
+    }
+    return html;
+  }
+
   // --- Display ---
   function displayResults(results, qrData) {
     // Current annual cost
@@ -701,6 +713,7 @@
     document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
 
     if (!results.best) {
+      document.getElementById('savings-hero').style.display = 'none';
       showScreen('result');
       return;
     }
@@ -709,14 +722,23 @@
     const bestBadge = document.getElementById('result-badge');
     const savingsEl = document.getElementById('result-savings');
     const altHeader = document.getElementById('alt-header');
+    const savingsHero = document.getElementById('savings-hero');
 
-    // Best offer — show offer name prominently, company below
-    const bestLabel = results.best.offerName
-      ? `${results.best.offerName} \u2014 ${results.best.company}`
-      : results.best.company;
-    document.getElementById('result-best-company').textContent = bestLabel;
+    // Best offer — separate company and offer name
+    document.getElementById('result-best-company').textContent = results.best.company;
+    const bestOfferNameEl = document.getElementById('result-best-offer-name');
+    if (results.best.offerName) {
+      bestOfferNameEl.textContent = results.best.offerName;
+      bestOfferNameEl.style.display = '';
+    } else {
+      bestOfferNameEl.style.display = 'none';
+    }
     document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
     document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+
+    // Feature tags for best offer
+    const bestFeaturesEl = document.getElementById('result-best-features');
+    bestFeaturesEl.innerHTML = buildFeatureTags(results.best);
 
     // Personalized insight + adapt sections based on whether user has top tariff
     const insightEl = document.getElementById('insight-text');
@@ -735,10 +757,16 @@
       savingsEl.classList.add('negative');
       savingsEl.classList.remove('positive');
 
+      // Savings hero: show "already good" state
+      savingsHero.classList.add('no-savings');
+      document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
+      document.getElementById('savings-hero-amount').textContent = 'Ya est\u00e1s entre las mejores';
+      document.getElementById('savings-hero-sub').textContent = `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas`;
+
       document.getElementById('section-howto').style.display = 'none';
     } else {
       bestHeader.textContent = 'Mejor oferta del mercado';
-      bestBadge.textContent = 'Mejor oferta';
+      bestBadge.textContent = '#1 de ' + results.totalOffers + ' ofertas';
       bestBadge.classList.remove('badge-good');
       altHeader.textContent = 'Tambi\u00e9n podr\u00edas considerar';
 
@@ -746,12 +774,21 @@
       const insight = buildInsight(results, qrData);
       insightEl.innerHTML = insight;
 
+      // === SAVINGS HERO ===
+      savingsHero.classList.remove('no-savings');
       if (results.savings > 0) {
         const savingsMonthly = results.savings / 12;
-        savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/a\u00f1o (${formatCurrency(savingsMonthly)}/mes)`;
-        savingsEl.classList.add('positive');
-        savingsEl.classList.remove('negative');
+        document.getElementById('savings-hero-label').textContent = 'Tu ahorro potencial';
+        document.getElementById('savings-hero-amount').textContent = `${formatCurrency(results.savings)}/a\u00f1o`;
+        document.getElementById('savings-hero-sub').textContent = `${formatCurrency(savingsMonthly)}/mes \u2014 cambiando a ${results.best.company}`;
+
+        savingsEl.style.display = 'none';
       } else {
+        savingsHero.classList.add('no-savings');
+        document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
+        document.getElementById('savings-hero-amount').textContent = 'Tu tarifa ya es muy competitiva';
+        document.getElementById('savings-hero-sub').textContent = '';
+
         savingsEl.textContent = 'Tu tarifa actual ya es muy competitiva';
         savingsEl.classList.add('negative');
         savingsEl.classList.remove('positive');
@@ -760,18 +797,25 @@
       document.getElementById('section-howto').style.display = '';
     }
 
-    // Alternatives — show offer name first (more useful), then company
+    // Alternatives — improved card layout with stacked info
     results.alternatives.forEach((alt, i) => {
       const el = document.getElementById(`alt-${i + 1}`);
       if (el && alt) {
-        el.querySelector('.alt-name').textContent = alt.offerName
-          ? `${alt.offerName} (${alt.company})`
-          : alt.company;
-        el.querySelector('.alt-amount').textContent = formatCurrency(alt.amount);
+        el.querySelector('.alt-name').textContent = alt.company;
+        const altOfferName = el.querySelector('.alt-offer-name');
+        if (altOfferName) {
+          altOfferName.textContent = alt.offerName || '';
+        }
+        el.querySelector('.alt-amount').textContent = `${formatCurrency(alt.amount)}/a\u00f1o`;
         const saving = results.current.amount - alt.amount;
         el.querySelector('.alt-saving').textContent = saving > 0
-          ? `-${formatCurrency(saving)}`
+          ? `Ahorras ${formatCurrency(saving)}/a\u00f1o`
           : '';
+        // Feature tags
+        const altFeaturesEl = el.querySelector('.alt-features');
+        if (altFeaturesEl) {
+          altFeaturesEl.innerHTML = buildFeatureTags(alt);
+        }
         el.style.display = '';
       } else if (el) {
         el.style.display = 'none';

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Escanea el QR de tu factura de la luz y descubre si puedes ahorrar. Gratis, sin registro, sin compromiso.">
   <meta name="theme-color" content="#1a1a2e">
-  <title>AhorraLuz — Descubre si pagas de más en tu factura de la luz</title>
+  <title>AhorraLuz — Descubre si pagas de m&aacute;s en tu factura de la luz</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
@@ -15,13 +15,30 @@
   <section id="screen-landing" class="screen active">
     <div class="landing-content">
       <div class="logo-mark">AhorraLuz</div>
-      <h1>Descubre si pagas de m&aacute;s en tu factura de la luz</h1>
-      <p class="subtitle">Escanea el c&oacute;digo QR de tu factura y te decimos en segundos cu&aacute;nto puedes ahorrar.</p>
+      <div class="logo-tagline">Comparador de tarifas</div>
+      <h1>Descubre <span class="highlight">cu&aacute;nto puedes ahorrar</span> en tu factura de la luz</h1>
+      <p class="subtitle">Escanea el c&oacute;digo QR de tu factura y te decimos en segundos si est&aacute;s pagando de m&aacute;s.</p>
+
+      <div class="landing-steps">
+        <div class="landing-step">
+          <div class="landing-step-icon">1</div>
+          <span class="landing-step-text">Escanea el QR</span>
+        </div>
+        <div class="landing-step">
+          <div class="landing-step-icon">2</div>
+          <span class="landing-step-text">Analizamos tu consumo</span>
+        </div>
+        <div class="landing-step">
+          <div class="landing-step-icon">3</div>
+          <span class="landing-step-text">Ves cu&aacute;nto ahorras</span>
+        </div>
+      </div>
+
       <button id="btn-scan" class="btn-primary">Escanear QR de mi factura</button>
       <div class="trust-badges">
-        <span>Sin registro</span>
-        <span>100% gratis</span>
-        <span>Sin compromiso</span>
+        <span><span class="badge-icon">&#x1f512;</span> Sin registro</span>
+        <span><span class="badge-icon">&#x2714;</span> 100% gratis</span>
+        <span><span class="badge-icon">&#x1f91d;</span> Sin compromiso</span>
       </div>
       <details class="faq">
         <summary>&iquest;D&oacute;nde est&aacute; el QR?</summary>
@@ -52,19 +69,19 @@
       <h2>Analizando tu factura...</h2>
       <div class="steps">
         <div class="step" id="step-qr">
-          <span class="step-icon">&#9711;</span>
+          <span class="step-icon"></span>
           <span class="step-text">Leyendo c&oacute;digo QR</span>
         </div>
         <div class="step" id="step-data">
-          <span class="step-icon">&#9711;</span>
+          <span class="step-icon"></span>
           <span class="step-text">Extrayendo datos de consumo</span>
         </div>
         <div class="step" id="step-offers">
-          <span class="step-icon">&#9711;</span>
+          <span class="step-icon"></span>
           <span class="step-text">Buscando las mejores ofertas del mercado</span>
         </div>
         <div class="step" id="step-calc">
-          <span class="step-icon">&#9711;</span>
+          <span class="step-icon"></span>
           <span class="step-text">Calculando tu ahorro</span>
         </div>
       </div>
@@ -90,50 +107,50 @@
 
         <div class="profile-card">
           <div class="profile-company">
-            <span class="profile-company-name" id="user-comercializadora">—</span>
-            <span class="profile-contract" id="user-tipo-contrato">—</span>
+            <span class="profile-company-name" id="user-comercializadora">&mdash;</span>
+            <span class="profile-contract" id="user-tipo-contrato">&mdash;</span>
           </div>
           <div class="profile-total">
-            <span class="profile-total-value" id="user-consumo-total">—</span>
+            <span class="profile-total-value" id="user-consumo-total">&mdash;</span>
             <span class="profile-total-label">consumo anual</span>
           </div>
           <div class="profile-bars">
             <div class="bar-group">
+              <div class="bar-meta">
+                <span class="bar-label"><span class="bar-label-dot dot-punta"></span> Punta</span>
+                <span class="bar-value" id="user-consumo-p1">&mdash;</span>
+              </div>
               <div class="bar-track">
                 <div class="bar-fill bar-punta" id="bar-p1"></div>
               </div>
-              <div class="bar-meta">
-                <span class="bar-label">Punta</span>
-                <span class="bar-value" id="user-consumo-p1">—</span>
-              </div>
             </div>
             <div class="bar-group">
+              <div class="bar-meta">
+                <span class="bar-label"><span class="bar-label-dot dot-llano"></span> Llano</span>
+                <span class="bar-value" id="user-consumo-p2">&mdash;</span>
+              </div>
               <div class="bar-track">
                 <div class="bar-fill bar-llano" id="bar-p2"></div>
               </div>
-              <div class="bar-meta">
-                <span class="bar-label">Llano</span>
-                <span class="bar-value" id="user-consumo-p2">—</span>
-              </div>
             </div>
             <div class="bar-group">
+              <div class="bar-meta">
+                <span class="bar-label"><span class="bar-label-dot dot-valle"></span> Valle</span>
+                <span class="bar-value" id="user-consumo-p3">&mdash;</span>
+              </div>
               <div class="bar-track">
                 <div class="bar-fill bar-valle" id="bar-p3"></div>
-              </div>
-              <div class="bar-meta">
-                <span class="bar-label">Valle</span>
-                <span class="bar-value" id="user-consumo-p3">—</span>
               </div>
             </div>
           </div>
           <div class="profile-details">
             <div class="profile-detail">
               <span class="profile-detail-label">Potencia</span>
-              <span class="profile-detail-value" id="user-potencia">—</span>
+              <span class="profile-detail-value" id="user-potencia">&mdash;</span>
             </div>
             <div class="profile-detail">
               <span class="profile-detail-label">Periodo</span>
-              <span class="profile-detail-value" id="user-periodo">—</span>
+              <span class="profile-detail-value" id="user-periodo">&mdash;</span>
             </div>
           </div>
         </div>
@@ -152,27 +169,27 @@
           <div class="bill-breakdown" id="bill-breakdown">
             <div class="bill-row">
               <span>Potencia</span>
-              <span id="bill-potencia">—</span>
+              <span id="bill-potencia">&mdash;</span>
             </div>
             <div class="bill-row">
               <span>Energ&iacute;a</span>
-              <span id="bill-energia">—</span>
+              <span id="bill-energia">&mdash;</span>
             </div>
             <div class="bill-row">
               <span>Impuestos y otros</span>
-              <span id="bill-otros">—</span>
+              <span id="bill-otros">&mdash;</span>
             </div>
             <div class="bill-row bill-row-total">
               <span>&Uacute;ltima factura</span>
-              <span id="bill-total">—</span>
+              <span id="bill-total">&mdash;</span>
             </div>
           </div>
           <div class="bill-annual">
             <div class="bill-annual-main">
-              <span class="result-amount" id="result-current-amount">—</span>
+              <span class="result-amount" id="result-current-amount">&mdash;</span>
               <span class="bill-annual-label">/a&ntilde;o</span>
             </div>
-            <span class="bill-monthly" id="result-current-monthly">—</span>
+            <span class="bill-monthly" id="result-current-monthly">&mdash;</span>
           </div>
         </div>
       </div>
@@ -180,12 +197,21 @@
       <!-- Seccion: Explicacion personalizada -->
       <div class="section-block" id="section-insight">
         <div class="insight-card" id="insight-card">
-          <p id="insight-text">—</p>
+          <span class="insight-label">Nuestro an&aacute;lisis</span>
+          <p id="insight-text">&mdash;</p>
         </div>
       </div>
 
+      <!-- Transicion visual -->
       <div class="result-divider">
         <span class="arrow-down"></span>
+      </div>
+
+      <!-- === AHORRO HERO === -->
+      <div class="savings-hero" id="savings-hero">
+        <div class="savings-hero-label" id="savings-hero-label">Tu ahorro potencial</div>
+        <div class="savings-hero-amount" id="savings-hero-amount">&mdash;</div>
+        <div class="savings-hero-sub" id="savings-hero-sub"></div>
       </div>
 
       <!-- Seccion: Mejor oferta -->
@@ -199,10 +225,12 @@
         </div>
         <div class="result-best">
           <span class="result-badge" id="result-badge">Mejor oferta</span>
-          <span class="result-company" id="result-best-company">—</span>
-          <span class="result-amount result-amount-best" id="result-best-amount">—</span>
+          <span class="result-best-company" id="result-best-company">&mdash;</span>
+          <span class="result-best-offer-name" id="result-best-offer-name"></span>
+          <span class="result-amount result-amount-best" id="result-best-amount">&mdash;</span>
           <span class="result-period">al a&ntilde;o <span id="result-best-monthly"></span></span>
-          <div class="result-savings" id="result-savings">—</div>
+          <div class="result-best-features" id="result-best-features"></div>
+          <div class="result-savings" id="result-savings">&mdash;</div>
         </div>
       </div>
 
@@ -216,21 +244,45 @@
           <p>Segunda y tercera mejor oferta para tu perfil. A veces la m&aacute;s barata tiene condiciones que no te interesan, as&iacute; que te damos opciones.</p>
         </div>
         <div class="alt-offer" id="alt-1">
-          <span class="alt-name">—</span>
-          <span class="alt-amount">—</span>
-          <span class="alt-saving">—</span>
+          <div class="alt-offer-top">
+            <div>
+              <span class="alt-name">&mdash;</span>
+              <div class="alt-offer-name"></div>
+            </div>
+            <span class="alt-amount">&mdash;</span>
+          </div>
+          <div class="alt-offer-bottom">
+            <span class="alt-saving">&mdash;</span>
+            <div class="alt-features"></div>
+          </div>
         </div>
         <div class="alt-offer" id="alt-2">
-          <span class="alt-name">—</span>
-          <span class="alt-amount">—</span>
-          <span class="alt-saving">—</span>
+          <div class="alt-offer-top">
+            <div>
+              <span class="alt-name">&mdash;</span>
+              <div class="alt-offer-name"></div>
+            </div>
+            <span class="alt-amount">&mdash;</span>
+          </div>
+          <div class="alt-offer-bottom">
+            <span class="alt-saving">&mdash;</span>
+            <div class="alt-features"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Seccion: C&oacute;mo cambiar -->
+      <!-- Seccion: Como cambiar -->
       <div class="section-block" id="section-howto">
         <div class="result-info">
-          <p>Cambiar de comercializadora es <strong>gratis</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>. Tu nueva comercializadora gestiona todo. Solo necesitas tu CUPS y tu cuenta bancaria.</p>
+          <div class="result-info-title">
+            <span class="info-icon">&#9889;</span> C&oacute;mo cambiar de comercializadora
+          </div>
+          <p>El proceso es <strong>gratuito</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>. Tu nueva comercializadora gestiona todo el tr&aacute;mite.</p>
+          <ul class="info-checklist">
+            <li><span class="check-icon">&#10003;</span> Solo necesitas tu CUPS y tu cuenta bancaria</li>
+            <li><span class="check-icon">&#10003;</span> No necesitas avisar a tu comercializadora actual</li>
+            <li><span class="check-icon">&#10003;</span> Puedes cambiar tantas veces como quieras</li>
+          </ul>
         </div>
       </div>
 
