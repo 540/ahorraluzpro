@@ -708,15 +708,24 @@
 
   // --- Display ---
   function displayResults(results, qrData) {
-    // Current annual cost
+    // Comparison cards
+    document.getElementById('comp-current-company').textContent = results.current.company;
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
     document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
 
     if (!results.best) {
       document.getElementById('savings-hero').style.display = 'none';
+      document.querySelector('.comparison-grid').style.display = 'none';
       showScreen('result');
       return;
     }
+
+    // Comparison: best offer side
+    document.getElementById('result-best-company').textContent = results.best.offerName
+      ? `${results.best.offerName}`
+      : results.best.company;
+    document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
+    document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
 
     const bestHeader = document.getElementById('best-header');
     const bestBadge = document.getElementById('result-badge');
@@ -724,8 +733,8 @@
     const altHeader = document.getElementById('alt-header');
     const savingsHero = document.getElementById('savings-hero');
 
-    // Best offer — separate company and offer name
-    document.getElementById('result-best-company').textContent = results.best.company;
+    // Detail card
+    document.getElementById('result-best-company-detail').textContent = results.best.company;
     const bestOfferNameEl = document.getElementById('result-best-offer-name');
     if (results.best.offerName) {
       bestOfferNameEl.textContent = results.best.offerName;
@@ -733,8 +742,6 @@
     } else {
       bestOfferNameEl.style.display = 'none';
     }
-    document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-    document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
 
     // Feature tags for best offer
     const bestFeaturesEl = document.getElementById('result-best-features');

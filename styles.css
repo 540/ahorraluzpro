@@ -125,6 +125,81 @@ html, body {
   line-height: 1.3;
 }
 
+.privacy-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+  opacity: 0.7;
+}
+
+/* Comparison grid */
+.comparison-grid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.comparison-card {
+  flex: 1;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  text-align: center;
+}
+
+.comparison-current {
+  border: 1px solid var(--border);
+}
+
+.comparison-best {
+  border: 1.5px solid var(--accent);
+  background: var(--bg-card-alt);
+}
+
+.comparison-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.comparison-company {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  min-height: 32px;
+}
+
+.comparison-amount {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.comparison-amount-best {
+  color: var(--accent);
+}
+
+.comparison-monthly {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.comparison-arrow {
+  font-size: 20px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
 .btn-primary {
   display: block;
   width: 100%;
@@ -1210,6 +1285,10 @@ html, body {
   .savings-hero-amount {
     font-size: 56px;
   }
+
+  .comparison-amount {
+    font-size: 28px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -1217,7 +1296,82 @@ html, body {
     padding: 40px;
   }
 
+  .landing-content {
+    max-width: 560px;
+  }
+
   .landing-content h1 {
+    font-size: 38px;
+  }
+
+  .result-content {
+    max-width: 640px;
+  }
+
+  .comparison-grid {
+    gap: 16px;
+  }
+
+  .comparison-card {
+    padding: 24px 20px;
+  }
+
+  .comparison-amount {
+    font-size: 32px;
+  }
+
+  .comparison-company {
+    font-size: 14px;
+  }
+
+  .savings-hero {
+    padding: 36px 24px;
+  }
+
+  .savings-hero-amount {
+    font-size: 64px;
+  }
+}
+
+/* Desktop: wider layout with side-by-side sections */
+@media (min-width: 1024px) {
+  .landing-content {
+    max-width: 600px;
+  }
+
+  .landing-content h1 {
+    font-size: 44px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+  }
+
+  .result-content {
+    max-width: 800px;
+  }
+
+  .comparison-card {
+    padding: 32px 24px;
+  }
+
+  .comparison-amount {
     font-size: 36px;
+  }
+
+  .comparison-company {
+    font-size: 15px;
+    min-height: auto;
+  }
+
+  .savings-hero-amount {
+    font-size: 72px;
+  }
+
+  /* Two-column layout for detail sections on desktop */
+  .detail-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
   }
 }
