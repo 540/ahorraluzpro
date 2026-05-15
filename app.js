@@ -516,9 +516,46 @@
 
   // --- Cost estimation from QR data ---
   function estimateAnnualCost(qrData) {
-    // If we have the annual import directly from the QR
+    // Method 1 (BEST): Use contract prices from QR × annual consumption
+    // This is the most accurate because it uses real annual consumption
+    // and the actual prices from the user's contract
+    if (qrData.precioEnerP1 > 0 && qrData.precioPotP1 > 0) {
+      const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
+      if (consumoTotal > 0) {
+        const costePotencia = (qrData.potenciaP1 * qrData.precioPotP1)
+                            + ((qrData.potenciaP2 || qrData.potenciaP1) * qrData.precioPotP2);
+        const costeEnergia = (qrData.consumoAnualP1 * qrData.precioEnerP1)
+                           + (qrData.consumoAnualP2 * qrData.precioEnerP2)
+                           + (qrData.consumoAnualP3 * qrData.precioEnerP3);
+        const subtotal = costePotencia + costeEnergia;
+        const impElectrico = subtotal * 0.0511;
+        const base = subtotal + impElectrico;
+        const iva = base * 0.21;
+        return base + iva;
+      }
+    }
+
+    // Method 2: Estimate from consumption with average market prices
+    const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
+    const potencia = qrData.potenciaP1 || 3.45;
+
+    if (consumoTotal > 0) {
+      // Average 2.0TD prices (2025-2026 Spain)
+      const precioEnergiaMedia = 0.14;
+      const precioPotP1Media = 30.67;
+      const precioPotP2Media = 7.30;
+
+      const costeEnergia = consumoTotal * precioEnergiaMedia;
+      const costePotencia = (potencia * precioPotP1Media) + (potencia * precioPotP2Media);
+      const subtotal = costeEnergia + costePotencia;
+      const impElectrico = subtotal * 0.0511;
+      const base = subtotal + impElectrico;
+      const iva = base * 0.21;
+      return base + iva;
+    }
+
+    // Method 3 (FALLBACK): Extrapolate from last bill
     if (qrData.importeTotal > 0) {
-      // Extrapolate from billing period to annual
       const factStart = qrData.inicioFact ? new Date(qrData.inicioFact) : null;
       const factEnd = qrData.finFact ? new Date(qrData.finFact) : null;
 
@@ -528,25 +565,10 @@
           return (qrData.importeTotal / days) * 365;
         }
       }
-      // Assume bimonthly billing
       return qrData.importeTotal * 6;
     }
 
-    // Estimate from consumption using average prices (2024-2025 Spain averages)
-    const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
-    const potencia = qrData.potenciaP1;
-
-    // Average costs per kWh and kW/year for 2.0TD
-    const precioEnergiaMedia = 0.15; // EUR/kWh average
-    const precioPotenciaMedia = 30;  // EUR/kW/year average
-
-    const costeEnergia = consumoTotal * precioEnergiaMedia;
-    const costePotencia = potencia * precioPotenciaMedia * 2; // 2 periods
-    const impuestoElectrico = (costeEnergia + costePotencia) * 0.05;
-    const subtotal = costeEnergia + costePotencia + impuestoElectrico;
-    const iva = subtotal * 0.21;
-
-    return subtotal + iva;
+    return 0;
   }
 
   // --- Process CNMC offers ---
