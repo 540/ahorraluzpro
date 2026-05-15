@@ -123,29 +123,23 @@
         </div>
       </div>
 
-      <!-- === 3. Insight personalizado === -->
-      <div class="section-block" id="section-insight">
-        <div class="insight-card" id="insight-card">
-          <span class="insight-label">Nuestro an&aacute;lisis</span>
-          <p id="insight-text">&mdash;</p>
+      <!-- === 3+4. Insight + Mejor oferta (side by side on desktop) === -->
+      <div class="insight-best-row">
+        <div class="section-block" id="section-insight">
+          <div class="insight-card" id="insight-card">
+            <span class="insight-label">Nuestro an&aacute;lisis</span>
+            <p id="insight-text">&mdash;</p>
+          </div>
         </div>
-      </div>
 
-      <!-- === 4. Detalle mejor oferta === -->
-      <div class="section-block" id="section-best">
-        <div class="section-header">
-          <h3 id="best-header">Mejor oferta del mercado</h3>
-          <button class="help-toggle" data-help="help-mejor" aria-label="Ayuda">?</button>
-        </div>
-        <div class="help-text" id="help-mejor">
-          <p>Comparamos tu consumo con <strong>todas las ofertas</strong> del comparador oficial de la CNMC. Usamos el <strong>precio del segundo a&ntilde;o</strong> (sin promos temporales) para que la comparaci&oacute;n sea justa.</p>
-        </div>
-        <div class="result-best">
-          <span class="result-badge" id="result-badge">Mejor oferta</span>
-          <span class="result-best-company" id="result-best-company-detail">&mdash;</span>
-          <span class="result-best-offer-name" id="result-best-offer-name"></span>
-          <div class="result-best-features" id="result-best-features"></div>
-          <div class="result-savings" id="result-savings">&mdash;</div>
+        <div class="section-block" id="section-best">
+          <div class="result-best">
+            <span class="result-badge" id="result-badge">Mejor oferta</span>
+            <span class="result-best-company" id="result-best-company-detail">&mdash;</span>
+            <span class="result-best-offer-name" id="result-best-offer-name"></span>
+            <div class="result-best-features" id="result-best-features"></div>
+            <div class="result-savings" id="result-savings">&mdash;</div>
+          </div>
         </div>
       </div>
 
@@ -276,22 +270,23 @@
         </div>
       </div>
 
-      <!-- === 8. C&oacute;mo cambiar === -->
-      <div class="section-block" id="section-howto">
-        <div class="result-info">
-          <div class="result-info-title">
-            <span class="info-icon">&#9889;</span> C&oacute;mo cambiar de comercializadora
+      <!-- === 8. Footer: How-to + restart === -->
+      <div class="result-footer">
+        <div class="section-block" id="section-howto">
+          <div class="result-info">
+            <div class="result-info-title">
+              <span class="info-icon">&#9889;</span> C&oacute;mo cambiar de comercializadora
+            </div>
+            <p>El proceso es <strong>gratuito</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>.</p>
+            <ul class="info-checklist">
+              <li><span class="check-icon">&#10003;</span> Solo necesitas tu CUPS y tu cuenta bancaria</li>
+              <li><span class="check-icon">&#10003;</span> No necesitas avisar a tu comercializadora actual</li>
+              <li><span class="check-icon">&#10003;</span> Puedes cambiar tantas veces como quieras</li>
+            </ul>
           </div>
-          <p>El proceso es <strong>gratuito</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>.</p>
-          <ul class="info-checklist">
-            <li><span class="check-icon">&#10003;</span> Solo necesitas tu CUPS y tu cuenta bancaria</li>
-            <li><span class="check-icon">&#10003;</span> No necesitas avisar a tu comercializadora actual</li>
-            <li><span class="check-icon">&#10003;</span> Puedes cambiar tantas veces como quieras</li>
-          </ul>
         </div>
+        <button id="btn-restart" class="btn-secondary">Escanear otra factura</button>
       </div>
-
-      <button id="btn-restart" class="btn-secondary">Escanear otra factura</button>
 
       <div class="result-disclaimer">
         <p>Datos reales del comparador oficial de la CNMC. No almacenamos ning&uacute;n dato personal. AhorraLuz no est&aacute; afiliado con ninguna comercializadora.</p>

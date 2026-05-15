@@ -1580,12 +1580,17 @@ html, body {
    =================================================================== */
 @media (min-width: 1024px) {
   .screen {
-    padding: 64px 48px;
+    padding: 40px 64px;
   }
 
-  /* === LANDING: wider hero layout === */
+  /* Landing must fit in viewport — no scroll */
+  #screen-landing.active {
+    justify-content: center;
+    min-height: 100vh;
+  }
+
   .landing-content {
-    max-width: 640px;
+    max-width: 800px;
   }
 
   .logo-mark {
@@ -1593,24 +1598,25 @@ html, body {
   }
 
   .logo-tagline {
-    margin-bottom: 56px;
+    margin-bottom: 36px;
   }
 
   .landing-content h1 {
-    font-size: 44px;
+    font-size: 48px;
     letter-spacing: -1px;
-    line-height: 1.15;
+    line-height: 1.1;
+    margin-bottom: 12px;
   }
 
   .subtitle {
     font-size: 18px;
-    max-width: 480px;
-    margin-bottom: 56px;
+    max-width: 520px;
+    margin-bottom: 36px;
   }
 
   .landing-steps {
-    gap: 40px;
-    margin-bottom: 48px;
+    gap: 48px;
+    margin-bottom: 36px;
   }
 
   .landing-step {
@@ -1618,8 +1624,8 @@ html, body {
   }
 
   .landing-step:not(:last-child)::after {
-    width: 48px;
-    right: -24px;
+    width: 56px;
+    right: -28px;
   }
 
   .landing-step-icon {
@@ -1634,25 +1640,31 @@ html, body {
   }
 
   .btn-primary {
-    max-width: 380px;
+    max-width: 400px;
     padding: 18px 48px;
     font-size: 16px;
   }
 
   .trust-badges {
-    gap: 10px;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .privacy-note {
+    margin-bottom: 16px;
   }
 
   .faq {
-    max-width: 480px;
+    max-width: 500px;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 24px;
   }
 
   /* === LOADING === */
   .loading-content {
     max-width: 500px;
-    padding: 40px;
+    padding: 48px;
     background: var(--bg-card);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border);
@@ -1662,21 +1674,31 @@ html, body {
     font-size: 24px;
   }
 
-  /* === RESULT: intelligent width use === */
-  .result-content {
-    max-width: 760px;
+  /* === RESULT: use full width, desktop layout === */
+  #screen-result.active {
+    justify-content: flex-start;
+    padding-top: 40px;
   }
 
+  .result-content {
+    max-width: 960px;
+  }
+
+  /* Savings hero + comparison side by side */
   .savings-hero {
-    padding: 48px 40px;
+    padding: 36px 40px;
   }
 
   .savings-hero-amount {
-    font-size: 64px;
+    font-size: 56px;
   }
 
   .savings-hero-sub {
     font-size: 15px;
+  }
+
+  .comparison-grid {
+    gap: 16px;
   }
 
   .comparison-card {
@@ -1692,15 +1714,26 @@ html, body {
     min-height: auto;
   }
 
-  /* Side-by-side detail grid for bill + consumption */
-  .detail-grid {
+  /* Insight + best offer side by side */
+  .insight-best-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    align-items: start;
   }
 
-  .detail-grid .section-block {
+  .insight-best-row .section-block {
     margin-bottom: 0;
+  }
+
+  .insight-card {
+    padding: 24px 28px;
+    height: 100%;
+  }
+
+  .result-best {
+    padding: 28px;
+    height: 100%;
   }
 
   /* Alternatives side by side */
@@ -1714,16 +1747,38 @@ html, body {
     margin-bottom: 0;
   }
 
-  .insight-card {
-    padding: 24px 28px;
+  /* Bill + consumption side by side */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
   }
 
-  .result-best {
-    padding: 32px 28px;
+  .detail-grid .section-block {
+    margin-bottom: 0;
+  }
+
+  /* How-to + restart in a row */
+  .result-footer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .result-footer .section-block {
+    margin-bottom: 0;
+  }
+
+  .result-footer #btn-restart {
+    margin-top: 0;
+    width: auto;
+    padding: 14px 32px;
+    align-self: center;
   }
 
   .result-info {
-    padding: 28px;
+    padding: 24px 28px;
   }
 }
 
@@ -1731,22 +1786,30 @@ html, body {
    RESPONSIVE — LARGE DESKTOP (1280px+)
    =================================================================== */
 @media (min-width: 1280px) {
+  .screen {
+    padding: 48px 80px;
+  }
+
   .landing-content {
-    max-width: 720px;
+    max-width: 880px;
   }
 
   .landing-content h1 {
-    font-size: 52px;
+    font-size: 56px;
     letter-spacing: -1.5px;
   }
 
   .subtitle {
-    font-size: 19px;
-    max-width: 520px;
+    font-size: 20px;
+    max-width: 560px;
   }
 
   .result-content {
-    max-width: 840px;
+    max-width: 1080px;
+  }
+
+  .savings-hero {
+    padding: 44px 48px;
   }
 
   .savings-hero-amount {
@@ -1755,5 +1818,9 @@ html, body {
 
   .comparison-amount {
     font-size: 36px;
+  }
+
+  .comparison-card {
+    padding: 32px 28px;
   }
 }
