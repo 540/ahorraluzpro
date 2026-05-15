@@ -542,36 +542,51 @@
       .sort((a, b) => a.importeSegundoAnio - b.importeSegundoAnio);
 
     if (sorted.length === 0) {
-      return { current: { company: companyName, amount: currentAnnualCost }, best: { company: '—', offerName: '', amount: 0 }, alternatives: [], savings: 0, totalOffers: 0 };
+      return { current: { company: companyName, amount: currentAnnualCost }, best: null, alternatives: [], savings: 0, totalOffers: 0, alreadyBest: false, currentCompanyOffers: [] };
     }
 
-    const best = sorted[0];
-    const alt1 = sorted[1] || null;
-    const alt2 = sorted[2] || null;
+    // Find the user's current company offers in the ranking
+    const companyNameUpper = companyName.toUpperCase();
+    const currentCompanyOffers = sorted
+      .map((o, idx) => ({ ...o, rank: idx + 1 }))
+      .filter(o => companyNameUpper.includes(o.comercializadora.toUpperCase().split(' ')[0]) ||
+                    o.comercializadora.toUpperCase().includes(companyNameUpper.split(' ')[0]));
 
-    return {
-      current: {
-        company: companyName,
-        amount: currentAnnualCost,
-      },
-      best: {
-        company: best.comercializadora || 'Mejor oferta',
-        offerName: best.oferta || '',
-        amount: best.importeSegundoAnio,
-        firstYearAmount: best.importePrimerAnio,
-        hasPenalty: best.penalizacion,
-        isGreen: best.verde,
-      },
-      alternatives: [alt1, alt2].filter(Boolean).map(o => ({
+    // Check if current company has the best (or near-best) offer
+    const bestCurrentOffer = currentCompanyOffers.length > 0 ? currentCompanyOffers[0] : null;
+    const alreadyBest = bestCurrentOffer && bestCurrentOffer.rank <= 3;
+
+    const best = sorted[0];
+
+    // Build alternatives: top offers excluding the best
+    // If user already has a top offer, show the competition instead
+    const altCandidates = sorted.slice(1);
+    const alt1 = altCandidates[0] || null;
+    const alt2 = altCandidates[1] || null;
+
+    function mapOffer(o) {
+      return {
         company: o.comercializadora || '',
         offerName: o.oferta || '',
         amount: o.importeSegundoAnio,
         firstYearAmount: o.importePrimerAnio,
         hasPenalty: o.penalizacion,
         isGreen: o.verde,
-      })),
+      };
+    }
+
+    return {
+      current: {
+        company: companyName,
+        amount: currentAnnualCost,
+      },
+      best: mapOffer(best),
+      alternatives: [alt1, alt2].filter(Boolean).map(mapOffer),
       savings: currentAnnualCost - best.importeSegundoAnio,
       totalOffers: sorted.length,
+      alreadyBest: alreadyBest,
+      currentCompanyBest: bestCurrentOffer ? mapOffer(bestCurrentOffer) : null,
+      currentCompanyRank: bestCurrentOffer ? bestCurrentOffer.rank : null,
     };
   }
 
@@ -631,25 +646,58 @@
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
     document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
 
-    // Best
-    const bestLabel = results.best.offerName
-      ? `${results.best.company} — ${results.best.offerName}`
-      : results.best.company;
-    document.getElementById('result-best-company').textContent = bestLabel;
-    document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-    document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+    if (!results.best) {
+      showScreen('result');
+      return;
+    }
 
-    // Savings
+    // Best offer section header — adapt based on whether user already has top tariff
+    const bestHeader = document.querySelector('[data-help="help-mejor"]').closest('.section-block').querySelector('h3');
+    const bestBadge = document.querySelector('.result-badge');
     const savingsEl = document.getElementById('result-savings');
-    if (results.savings > 0) {
-      const savingsMonthly = results.savings / 12;
-      savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/ano (${formatCurrency(savingsMonthly)}/mes)`;
-      savingsEl.classList.add('positive');
-      savingsEl.classList.remove('negative');
-    } else {
-      savingsEl.textContent = 'Ya tienes una de las mejores tarifas';
+
+    if (results.alreadyBest) {
+      bestHeader.textContent = 'Enhorabuena, ya estas entre las mejores';
+      bestBadge.textContent = 'Tu posicion: #' + results.currentCompanyRank + ' de ' + results.totalOffers;
+      bestBadge.classList.add('badge-good');
+
+      savingsEl.textContent = 'Ya tienes una de las mejores tarifas del mercado';
       savingsEl.classList.add('negative');
       savingsEl.classList.remove('positive');
+
+      // Show the best offer as reference
+      const bestLabel = results.best.offerName
+        ? `${results.best.company} — ${results.best.offerName}`
+        : results.best.company;
+      document.getElementById('result-best-company').textContent = bestLabel;
+      document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
+      document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+
+      // Change alternatives header
+      const altHeader = document.querySelector('[data-help="help-alternativas"]').closest('.section-block').querySelector('h3');
+      altHeader.textContent = 'La competencia';
+    } else {
+      bestHeader.textContent = 'Mejor oferta del mercado';
+      bestBadge.textContent = 'Mejor oferta';
+      bestBadge.classList.remove('badge-good');
+
+      const bestLabel = results.best.offerName
+        ? `${results.best.company} — ${results.best.offerName}`
+        : results.best.company;
+      document.getElementById('result-best-company').textContent = bestLabel;
+      document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
+      document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+
+      if (results.savings > 0) {
+        const savingsMonthly = results.savings / 12;
+        savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/ano (${formatCurrency(savingsMonthly)}/mes)`;
+        savingsEl.classList.add('positive');
+        savingsEl.classList.remove('negative');
+      } else {
+        savingsEl.textContent = 'Tu tarifa actual ya es muy competitiva';
+        savingsEl.classList.add('negative');
+        savingsEl.classList.remove('positive');
+      }
     }
 
     // Alternatives

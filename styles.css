@@ -551,6 +551,11 @@ html, body {
   color: var(--accent);
 }
 
+.badge-good {
+  background: var(--savings) !important;
+  color: var(--bg) !important;
+}
+
 .result-savings {
   margin-top: 12px;
   padding: 8px 20px;
