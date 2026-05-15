@@ -485,7 +485,7 @@
 
       // Show results
       displayConsumption(qrData, companyName);
-      displayResults(results);
+      displayResults(results, qrData);
 
     } catch (e) {
       console.error('Error processing QR:', e);
@@ -592,22 +592,42 @@
 
   // --- Display consumption data from QR ---
   function displayConsumption(qrData, companyName) {
-    const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3
-      + qrData.consumoAnualP4 + qrData.consumoAnualP5 + qrData.consumoAnualP6;
+    const p1 = qrData.consumoAnualP1;
+    const p2 = qrData.consumoAnualP2;
+    const p3 = qrData.consumoAnualP3;
+    const consumoTotal = p1 + p2 + p3 + qrData.consumoAnualP4 + qrData.consumoAnualP5 + qrData.consumoAnualP6;
+    const maxPeriod = Math.max(p1, p2, p3, 1);
 
-    document.getElementById('user-consumo-total').textContent = `${Math.round(consumoTotal)} kWh`;
-    document.getElementById('user-consumo-p1').textContent = `${Math.round(qrData.consumoAnualP1)} kWh`;
-    document.getElementById('user-consumo-p2').textContent = `${Math.round(qrData.consumoAnualP2)} kWh`;
-    document.getElementById('user-consumo-p3').textContent = `${Math.round(qrData.consumoAnualP3)} kWh`;
-    document.getElementById('user-potencia').textContent = `${qrData.potenciaP1} kW`;
+    // Profile card
     document.getElementById('user-comercializadora').textContent = companyName;
+    const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado' };
+    document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || '—';
+
+    document.getElementById('user-consumo-total').textContent = `${Math.round(consumoTotal).toLocaleString('es-ES')} kWh`;
+
+    // Consumption bars with percentages
+    const pctP1 = consumoTotal > 0 ? Math.round(p1 / consumoTotal * 100) : 0;
+    const pctP2 = consumoTotal > 0 ? Math.round(p2 / consumoTotal * 100) : 0;
+    const pctP3 = consumoTotal > 0 ? Math.round(p3 / consumoTotal * 100) : 0;
+
+    document.getElementById('user-consumo-p1').textContent = `${Math.round(p1).toLocaleString('es-ES')} kWh (${pctP1}%)`;
+    document.getElementById('user-consumo-p2').textContent = `${Math.round(p2).toLocaleString('es-ES')} kWh (${pctP2}%)`;
+    document.getElementById('user-consumo-p3').textContent = `${Math.round(p3).toLocaleString('es-ES')} kWh (${pctP3}%)`;
+
+    // Animate bars
+    setTimeout(() => {
+      document.getElementById('bar-p1').style.width = `${(p1 / maxPeriod) * 100}%`;
+      document.getElementById('bar-p2').style.width = `${(p2 / maxPeriod) * 100}%`;
+      document.getElementById('bar-p3').style.width = `${(p3 / maxPeriod) * 100}%`;
+    }, 100);
+
+    document.getElementById('user-potencia').textContent = `${qrData.potenciaP1} kW`;
 
     // Periodo
     const formatDate = (d) => {
       const date = new Date(d);
-      return isNaN(date) ? '' : date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+      return isNaN(date) ? '' : date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
     };
-
     if (qrData.inicioAnual) {
       const inicio = formatDate(qrData.inicioAnual);
       const fin = qrData.finAnual ? formatDate(qrData.finAnual) : 'actualidad';
@@ -616,31 +636,27 @@
       document.getElementById('user-periodo').textContent = 'Ultimo ano';
     }
 
-    // Tipo contrato
-    const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado/variable' };
-    document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || 'No disponible';
-
-    // Desglose factura actual
-    if (qrData.importePotencia > 0 || qrData.importeEnergia > 0) {
-      document.getElementById('bill-potencia').textContent = formatCurrency(qrData.importePotencia);
-      document.getElementById('bill-energia').textContent = formatCurrency(qrData.importeEnergia);
-      const otros = (qrData.importeTotal || 0) - (qrData.importePotencia || 0) - (qrData.importeEnergia || 0);
-      document.getElementById('bill-otros').textContent = formatCurrency(Math.max(0, otros));
+    // Bill breakdown
+    const hasBillDetail = qrData.importePotencia > 0 || qrData.importeEnergia > 0;
+    if (hasBillDetail) {
+      document.getElementById('bill-potencia').textContent = `${qrData.importePotencia.toFixed(2)} \u20AC`;
+      document.getElementById('bill-energia').textContent = `${qrData.importeEnergia.toFixed(2)} \u20AC`;
+      const otros = Math.max(0, (qrData.importeTotal || 0) - (qrData.importePotencia || 0) - (qrData.importeEnergia || 0));
+      document.getElementById('bill-otros').textContent = `${otros.toFixed(2)} \u20AC`;
+    } else if (qrData.importeTotal > 0) {
+      // No detail breakdown available, hide rows and just show total
+      document.getElementById('bill-breakdown').querySelectorAll('.bill-row:not(.bill-row-total)').forEach(r => r.style.display = 'none');
     } else {
-      document.getElementById('bill-potencia').textContent = '—';
-      document.getElementById('bill-energia').textContent = '—';
-      document.getElementById('bill-otros').textContent = '—';
+      document.getElementById('bill-breakdown').style.display = 'none';
     }
 
     if (qrData.importeTotal > 0) {
-      document.getElementById('bill-total').textContent = formatCurrency(qrData.importeTotal);
-    } else {
-      document.getElementById('bill-total').textContent = '—';
+      document.getElementById('bill-total').textContent = `${qrData.importeTotal.toFixed(2)} \u20AC`;
     }
   }
 
   // --- Display ---
-  function displayResults(results) {
+  function displayResults(results, qrData) {
     // Current
     document.getElementById('result-current-company').textContent = results.current.company;
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
@@ -651,42 +667,46 @@
       return;
     }
 
-    // Best offer section header — adapt based on whether user already has top tariff
-    const bestHeader = document.querySelector('[data-help="help-mejor"]').closest('.section-block').querySelector('h3');
-    const bestBadge = document.querySelector('.result-badge');
+    const bestHeader = document.getElementById('best-header');
+    const bestBadge = document.getElementById('result-badge');
     const savingsEl = document.getElementById('result-savings');
+    const altHeader = document.getElementById('alt-header');
+
+    // Best offer
+    const bestLabel = results.best.offerName
+      ? `${results.best.company} — ${results.best.offerName}`
+      : results.best.company;
+    document.getElementById('result-best-company').textContent = bestLabel;
+    document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
+    document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+
+    // Personalized insight + adapt sections based on whether user has top tariff
+    const insightEl = document.getElementById('insight-text');
 
     if (results.alreadyBest) {
-      bestHeader.textContent = 'Enhorabuena, ya estas entre las mejores';
-      bestBadge.textContent = 'Tu posicion: #' + results.currentCompanyRank + ' de ' + results.totalOffers;
+      bestHeader.textContent = 'La mejor del mercado';
+      bestBadge.textContent = '#' + results.currentCompanyRank + ' de ' + results.totalOffers + ' ofertas';
       bestBadge.classList.add('badge-good');
+      altHeader.textContent = 'La competencia';
 
-      savingsEl.textContent = 'Ya tienes una de las mejores tarifas del mercado';
+      insightEl.innerHTML = 'Buenas noticias: <strong>ya tienes una de las mejores tarifas del mercado</strong> para tu perfil de consumo. ' +
+        results.current.company + ' esta en el puesto <strong>#' + results.currentCompanyRank + ' de ' + results.totalOffers + '</strong> ofertas disponibles. ' +
+        'Te mostramos la competencia por si quieres comparar.';
+
+      savingsEl.textContent = 'Ya estas entre las mejores tarifas';
       savingsEl.classList.add('negative');
       savingsEl.classList.remove('positive');
 
-      // Show the best offer as reference
-      const bestLabel = results.best.offerName
-        ? `${results.best.company} — ${results.best.offerName}`
-        : results.best.company;
-      document.getElementById('result-best-company').textContent = bestLabel;
-      document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-      document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
-
-      // Change alternatives header
-      const altHeader = document.querySelector('[data-help="help-alternativas"]').closest('.section-block').querySelector('h3');
-      altHeader.textContent = 'La competencia';
+      document.getElementById('section-howto').style.display = 'none';
     } else {
       bestHeader.textContent = 'Mejor oferta del mercado';
       bestBadge.textContent = 'Mejor oferta';
       bestBadge.classList.remove('badge-good');
+      altHeader.textContent = 'Tambien podrias considerar';
 
-      const bestLabel = results.best.offerName
-        ? `${results.best.company} — ${results.best.offerName}`
-        : results.best.company;
-      document.getElementById('result-best-company').textContent = bestLabel;
-      document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-      document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
+      // Build personalized explanation
+      const insight = buildInsight(results, qrData);
+      insightEl.innerHTML = insight;
 
       if (results.savings > 0) {
         const savingsMonthly = results.savings / 12;
@@ -694,10 +714,12 @@
         savingsEl.classList.add('positive');
         savingsEl.classList.remove('negative');
       } else {
-        savingsEl.textContent = 'Tu tarifa actual ya es muy competitiva';
+        savingsEl.textContent = 'Tu tarifa actual ya es competitiva';
         savingsEl.classList.add('negative');
         savingsEl.classList.remove('positive');
       }
+
+      document.getElementById('section-howto').style.display = '';
     }
 
     // Alternatives
@@ -768,6 +790,41 @@
       detailsEl.style.display = 'none';
     }
     showScreen('error');
+  }
+
+  // --- Personalized insight ---
+  function buildInsight(results, qrData) {
+    const parts = [];
+    const savings = results.savings;
+    const current = results.current;
+    const best = results.best;
+
+    if (savings > 0) {
+      parts.push(`Estas pagando <strong>${formatCurrency(current.amount)}/ano</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
+      parts.push(`Podrias pagar <strong>${formatCurrency(best.amount)}/ano</strong> con ${best.company}. Eso son <strong>${formatCurrency(savings)} menos al ano</strong>.`);
+
+      if (results.currentCompanyRank) {
+        parts.push(`La mejor oferta de ${current.company} esta en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
+      }
+
+      // Explain WHY this offer is good for their profile
+      if (qrData) {
+        const total = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
+        if (total > 0) {
+          const pctValle = Math.round(qrData.consumoAnualP3 / total * 100);
+          const pctPunta = Math.round(qrData.consumoAnualP1 / total * 100);
+          if (pctValle >= 40) {
+            parts.push(`El <strong>${pctValle}%</strong> de tu consumo es en horario valle (noches y fines de semana), por lo que te conviene una tarifa que premie ese horario.`);
+          } else if (pctPunta >= 40) {
+            parts.push(`El <strong>${pctPunta}%</strong> de tu consumo es en horario punta. Una tarifa con precio unico te protege de los precios altos en esas horas.`);
+          } else {
+            parts.push(`Tu consumo esta bastante repartido entre horarios. Una tarifa con precio fijo unico puede darte estabilidad.`);
+          }
+        }
+      }
+    }
+
+    return parts.join(' ');
   }
 
   // --- Help toggles ---

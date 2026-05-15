@@ -321,7 +321,7 @@ html, body {
 
 /* Sections */
 .section-block {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .section-header {
@@ -384,46 +384,142 @@ html, body {
   color: var(--text);
 }
 
-/* Consumption grid */
-.consumption-grid {
+/* Profile card */
+.profile-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.profile-company {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-company-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.profile-contract {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.profile-total {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.profile-total-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.profile-total-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+/* Consumption bars */
+.profile-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-track {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  width: 0%;
+}
+
+.bar-punta { background: #ff6b6b; }
+.bar-llano { background: #ffd93d; }
+.bar-valle { background: var(--accent); }
+
+.bar-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.bar-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.profile-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
-.consumption-grid-secondary {
-  margin-bottom: 0;
-}
-
-.consumption-item {
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border-radius: var(--radius);
-}
-
-.consumption-label {
+.profile-detail-label {
   display: block;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
-.consumption-value {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
+.profile-detail-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Insight card */
+.insight-card {
+  background: var(--bg-card-alt);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  border-left: 3px solid var(--accent);
+}
+
+.insight-card p {
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--text);
 }
 
-.consumption-item:first-child {
-  grid-column: 1 / -1;
-}
-
-.consumption-item:first-child .consumption-value {
-  font-size: 22px;
+.insight-card strong {
   color: var(--accent);
 }
 

@@ -78,49 +78,63 @@
   <section id="screen-result" class="screen">
     <div class="result-content">
 
-      <!-- Seccion: Tu consumo -->
+      <!-- Seccion: Tu perfil de consumo -->
       <div class="section-block">
         <div class="section-header">
-          <h3>Tu consumo</h3>
+          <h3>Tu perfil de consumo</h3>
           <button class="help-toggle" data-help="help-consumo" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-consumo">
-          <p>Estos son los datos que hemos le&iacute;do del QR de tu factura. Representan tu <strong>consumo real del &uacute;ltimo a&ntilde;o</strong>, desglosado en tres franjas horarias: <strong>Punta</strong> (las horas m&aacute;s caras, ma&ntilde;ana y tarde entre semana), <strong>Llano</strong> (horas intermedias) y <strong>Valle</strong> (noches, fines de semana y festivos, las m&aacute;s baratas). Si concentras tu consumo en horas valle, pagar&aacute;s menos.</p>
+          <p>Estos datos se han le&iacute;do directamente del QR de tu factura. Representan tu <strong>consumo real del &uacute;ltimo a&ntilde;o</strong> en tres franjas horarias: <strong>Punta</strong> (horas m&aacute;s caras: ma&ntilde;ana y tarde L-V), <strong>Llano</strong> (horas intermedias) y <strong>Valle</strong> (noches, fines de semana y festivos). Si concentras consumo en valle, pagar&aacute;s menos.</p>
         </div>
-        <div class="consumption-grid">
-          <div class="consumption-item">
-            <span class="consumption-label">Consumo anual</span>
-            <span class="consumption-value" id="user-consumo-total">—</span>
+
+        <div class="profile-card">
+          <div class="profile-company">
+            <span class="profile-company-name" id="user-comercializadora">—</span>
+            <span class="profile-contract" id="user-tipo-contrato">—</span>
           </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Punta (P1)</span>
-            <span class="consumption-value" id="user-consumo-p1">—</span>
+          <div class="profile-total">
+            <span class="profile-total-value" id="user-consumo-total">—</span>
+            <span class="profile-total-label">consumo anual</span>
           </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Llano (P2)</span>
-            <span class="consumption-value" id="user-consumo-p2">—</span>
+          <div class="profile-bars">
+            <div class="bar-group">
+              <div class="bar-track">
+                <div class="bar-fill bar-punta" id="bar-p1"></div>
+              </div>
+              <div class="bar-meta">
+                <span class="bar-label">Punta</span>
+                <span class="bar-value" id="user-consumo-p1">—</span>
+              </div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-track">
+                <div class="bar-fill bar-llano" id="bar-p2"></div>
+              </div>
+              <div class="bar-meta">
+                <span class="bar-label">Llano</span>
+                <span class="bar-value" id="user-consumo-p2">—</span>
+              </div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-track">
+                <div class="bar-fill bar-valle" id="bar-p3"></div>
+              </div>
+              <div class="bar-meta">
+                <span class="bar-label">Valle</span>
+                <span class="bar-value" id="user-consumo-p3">—</span>
+              </div>
+            </div>
           </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Valle (P3)</span>
-            <span class="consumption-value" id="user-consumo-p3">—</span>
-          </div>
-        </div>
-        <div class="consumption-grid consumption-grid-secondary">
-          <div class="consumption-item">
-            <span class="consumption-label">Potencia contratada</span>
-            <span class="consumption-value" id="user-potencia">—</span>
-          </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Comercializadora</span>
-            <span class="consumption-value" id="user-comercializadora">—</span>
-          </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Periodo</span>
-            <span class="consumption-value" id="user-periodo">—</span>
-          </div>
-          <div class="consumption-item">
-            <span class="consumption-label">Tipo contrato</span>
-            <span class="consumption-value" id="user-tipo-contrato">—</span>
+          <div class="profile-details">
+            <div class="profile-detail">
+              <span class="profile-detail-label">Potencia</span>
+              <span class="profile-detail-value" id="user-potencia">—</span>
+            </div>
+            <div class="profile-detail">
+              <span class="profile-detail-label">Periodo</span>
+              <span class="profile-detail-value" id="user-periodo">—</span>
+            </div>
           </div>
         </div>
       </div>
@@ -128,15 +142,14 @@
       <!-- Seccion: Tu factura actual -->
       <div class="section-block">
         <div class="section-header">
-          <h3>Tu factura actual</h3>
+          <h3>Lo que pagas ahora</h3>
           <button class="help-toggle" data-help="help-tarifa" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-tarifa">
-          <p>Estos datos vienen de tu &uacute;ltima factura. La factura tiene dos partes principales: el <strong>t&eacute;rmino de potencia</strong> (lo que pagas por tener la luz disponible, aunque no la uses) y el <strong>t&eacute;rmino de energ&iacute;a</strong> (lo que pagas por cada kWh que consumes). A eso se suman el impuesto el&eacute;ctrico (5,11%), el IVA (21%) y el alquiler del contador.</p>
+          <p>Tu factura tiene dos partes: el <strong>t&eacute;rmino de potencia</strong> (pagas por tener la luz disponible, aunque no la uses) y el <strong>t&eacute;rmino de energ&iacute;a</strong> (pagas por cada kWh consumido). A eso se suman impuestos (~26%) y alquiler del contador.</p>
         </div>
         <div class="result-current">
-          <span class="result-company" id="result-current-company">—</span>
-          <div class="bill-breakdown">
+          <div class="bill-breakdown" id="bill-breakdown">
             <div class="bill-row">
               <span>Potencia</span>
               <span id="bill-potencia">—</span>
@@ -146,7 +159,7 @@
               <span id="bill-energia">—</span>
             </div>
             <div class="bill-row">
-              <span>Otros conceptos</span>
+              <span>Impuestos y otros</span>
               <span id="bill-otros">—</span>
             </div>
             <div class="bill-row bill-row-total">
@@ -155,10 +168,19 @@
             </div>
           </div>
           <div class="bill-annual">
-            <span class="bill-annual-label">Estimado anual</span>
-            <span class="result-amount" id="result-current-amount">—</span>
+            <div class="bill-annual-main">
+              <span class="result-amount" id="result-current-amount">—</span>
+              <span class="bill-annual-label">/a&ntilde;o</span>
+            </div>
             <span class="bill-monthly" id="result-current-monthly">—</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Seccion: Explicacion personalizada -->
+      <div class="section-block" id="section-insight">
+        <div class="insight-card" id="insight-card">
+          <p id="insight-text">—</p>
         </div>
       </div>
 
@@ -167,31 +189,31 @@
       </div>
 
       <!-- Seccion: Mejor oferta -->
-      <div class="section-block">
+      <div class="section-block" id="section-best">
         <div class="section-header">
-          <h3>Mejor oferta del mercado</h3>
+          <h3 id="best-header">Mejor oferta del mercado</h3>
           <button class="help-toggle" data-help="help-mejor" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-mejor">
-          <p>Hemos comparado tu consumo con <strong>todas las ofertas disponibles</strong> en el comparador oficial de la CNMC. Te mostramos la m&aacute;s barata usando el <strong>precio del segundo a&ntilde;o</strong> (sin promociones temporales) para que la comparaci&oacute;n sea justa. Si una oferta tiene penalizaci&oacute;n por permanencia, lo indicamos.</p>
+          <p>Comparamos tu consumo con <strong>todas las ofertas</strong> del comparador oficial de la CNMC. Usamos el <strong>precio del segundo a&ntilde;o</strong> (sin promos temporales) para que la comparaci&oacute;n sea justa.</p>
         </div>
         <div class="result-best">
-          <span class="result-badge">Mejor oferta</span>
+          <span class="result-badge" id="result-badge">Mejor oferta</span>
           <span class="result-company" id="result-best-company">—</span>
           <span class="result-amount result-amount-best" id="result-best-amount">—</span>
-          <span class="result-period">estimado/a&ntilde;o <span id="result-best-monthly"></span></span>
+          <span class="result-period">al a&ntilde;o <span id="result-best-monthly"></span></span>
           <div class="result-savings" id="result-savings">—</div>
         </div>
       </div>
 
       <!-- Seccion: Alternativas -->
-      <div class="section-block">
+      <div class="section-block" id="section-alternatives">
         <div class="section-header">
-          <h3>Tambi&eacute;n podr&iacute;as considerar</h3>
+          <h3 id="alt-header">Tambi&eacute;n podr&iacute;as considerar</h3>
           <button class="help-toggle" data-help="help-alternativas" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-alternativas">
-          <p>Estas son la segunda y tercera mejor oferta para tu perfil de consumo. A veces la m&aacute;s barata tiene permanencia o condiciones que no te interesan, as&iacute; que te damos opciones. El ahorro mostrado es respecto a lo que pagas ahora.</p>
+          <p>Segunda y tercera mejor oferta para tu perfil. A veces la m&aacute;s barata tiene condiciones que no te interesan, as&iacute; que te damos opciones.</p>
         </div>
         <div class="alt-offer" id="alt-1">
           <span class="alt-name">—</span>
@@ -205,17 +227,10 @@
         </div>
       </div>
 
-      <!-- Seccion: Cómo cambiar -->
-      <div class="section-block">
-        <div class="section-header">
-          <h3>&iquest;C&oacute;mo cambio de tarifa?</h3>
-          <button class="help-toggle" data-help="help-cambiar" aria-label="Ayuda">?</button>
-        </div>
-        <div class="help-text" id="help-cambiar">
-          <p>En Espa&ntilde;a, cambiar de comercializadora es un derecho del consumidor regulado por la CNMC. La nueva comercializadora se encarga de todo el papeleo. T&uacute; solo necesitas tu <strong>CUPS</strong> (aparece en tu factura) y tu cuenta bancaria. El distribuidor (la empresa que mantiene los cables) sigue siendo el mismo, por lo que no hay ning&uacute;n corte ni cambio f&iacute;sico.</p>
-        </div>
+      <!-- Seccion: C&oacute;mo cambiar -->
+      <div class="section-block" id="section-howto">
         <div class="result-info">
-          <p>Cambiar de comercializadora es <strong>gratis</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>. Tu nueva comercializadora gestiona todo el proceso.</p>
+          <p>Cambiar de comercializadora es <strong>gratis</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>. Tu nueva comercializadora gestiona todo. Solo necesitas tu CUPS y tu cuenta bancaria.</p>
         </div>
       </div>
 
