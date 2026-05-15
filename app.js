@@ -323,12 +323,32 @@
       activateStep('step-offers');
       const cnmcParams = buildCnmcParams(qrData);
       let offers;
+      let apiError = null;
       try {
         offers = await fetchOffers(cnmcParams);
       } catch (e) {
-        console.warn('CNMC API failed, using estimation mode:', e);
-        // Fallback: estimate based on QR data alone
-        offers = null;
+        console.error('CNMC API failed:', e);
+        apiError = e;
+      }
+
+      if (apiError || !offers || !offers.resultadoComparador || offers.resultadoComparador.length === 0) {
+        const reason = apiError
+          ? `Error de conexion: ${apiError.message}`
+          : 'El comparador no ha devuelto ofertas para tu perfil de consumo';
+        showError(
+          'No hemos podido obtener ofertas reales',
+          `${reason}. Puedes consultar directamente el comparador oficial de la CNMC escaneando el QR con la camara de tu movil (sin usar esta app) o visitando comparador.cnmc.gob.es.`,
+          {
+            error: apiError ? apiError.message : 'Sin ofertas en la respuesta',
+            codigoPostal: cnmcParams.codigoPostal,
+            consumoAnualE: cnmcParams.consumoAnualE,
+            potencia: cnmcParams.potencia,
+            tarifa: cnmcParams.tarifa,
+            ofertasRecibidas: offers ? (offers.resultadoComparador || []).length : 0,
+            url: `${CNMC_API_BASE}ofertas/electricidad`,
+          }
+        );
+        return;
       }
       await completeStep('step-offers', 300);
 
@@ -337,13 +357,7 @@
 
       const companyName = await fetchCompanyName(qrData.comercializadora);
       const currentAnnualCost = estimateAnnualCost(qrData);
-
-      let results;
-      if (offers && offers.resultadoComparador && offers.resultadoComparador.length > 0) {
-        results = processOffers(offers, qrData, currentAnnualCost, companyName);
-      } else {
-        results = buildEstimatedResults(qrData, currentAnnualCost, companyName);
-      }
+      const results = processOffers(offers, qrData, currentAnnualCost, companyName);
       await completeStep('step-calc', 400);
 
       // Show results
@@ -353,7 +367,8 @@
       console.error('Error processing QR:', e);
       showError(
         'Error al procesar tu factura',
-        'Ha ocurrido un error inesperado. Por favor, intentalo de nuevo.'
+        'Ha ocurrido un error inesperado. Por favor, intentalo de nuevo.',
+        { error: e.message, stack: e.stack }
       );
     }
   }
@@ -436,58 +451,6 @@
     };
   }
 
-  // --- Fallback when CNMC API fails ---
-  function buildEstimatedResults(qrData, currentAnnualCost, companyName) {
-    // Calculate what PVPC would cost (rough estimate)
-    const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
-    const potencia = qrData.potenciaP1 || 3.45;
-
-    // PVPC 2.0TD average 2025-2026 estimates
-    const pvpcP1 = 0.187;  // punta
-    const pvpcP2 = 0.145;  // llano
-    const pvpcP3 = 0.098;  // valle
-    const potP1 = 0.0846;  // EUR/kW/dia punta
-    const potP2 = 0.0210;  // EUR/kW/dia valle
-
-    let consumoP1 = qrData.consumoAnualP1 || consumoTotal * 0.35;
-    let consumoP2 = qrData.consumoAnualP2 || consumoTotal * 0.30;
-    let consumoP3 = qrData.consumoAnualP3 || consumoTotal * 0.35;
-
-    const costeEnergiaPVPC = consumoP1 * pvpcP1 + consumoP2 * pvpcP2 + consumoP3 * pvpcP3;
-    const costePotenciaPVPC = (potencia * potP1 + potencia * potP2) * 365;
-    const impElec = (costeEnergiaPVPC + costePotenciaPVPC) * 0.05;
-    const subtotalPVPC = costeEnergiaPVPC + costePotenciaPVPC + impElec;
-    const pvpcAnual = subtotalPVPC * 1.21; // +IVA
-
-    // Simulate a few free market offers with typical margins
-    const fijaBarata = pvpcAnual * 0.92;
-    const fijaMedia = pvpcAnual * 0.95;
-    const indexada = pvpcAnual * 0.97;
-
-    const results = {
-      current: {
-        company: companyName,
-        amount: currentAnnualCost,
-      },
-      best: {
-        company: 'Tarifa mas competitiva del mercado',
-        offerName: '(estimacion basada en tu consumo)',
-        amount: Math.min(fijaBarata, pvpcAnual),
-      },
-      alternatives: [
-        { company: 'PVPC (tarifa regulada)', offerName: '', amount: pvpcAnual },
-        { company: 'Tarifa fija competitiva', offerName: '', amount: fijaMedia },
-      ],
-      savings: currentAnnualCost - Math.min(fijaBarata, pvpcAnual),
-      isEstimation: true,
-    };
-
-    // Sort alternatives by amount
-    results.alternatives.sort((a, b) => a.amount - b.amount);
-
-    return results;
-  }
-
   // --- Display ---
   function displayResults(results) {
     // Current
@@ -531,11 +494,9 @@
       }
     });
 
-    // Add estimation disclaimer if needed
-    if (results.isEstimation) {
-      const disclaimer = document.querySelector('.result-disclaimer p');
-      disclaimer.textContent = 'Estimacion basada en tu consumo y precios medios del mercado. Para un resultado exacto, consulta el comparador oficial de la CNMC. AhorraLuz no esta afiliado con ninguna comercializadora.';
-    }
+    // Show data source badge
+    const disclaimer = document.querySelector('.result-disclaimer p');
+    disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no esta afiliado con ninguna comercializadora.`;
 
     showScreen('result');
   }
@@ -571,9 +532,17 @@
   }
 
   // --- Error ---
-  function showError(title, message) {
+  function showError(title, message, details) {
     document.getElementById('error-title').textContent = title;
     document.getElementById('error-message').textContent = message;
+    const detailsEl = document.getElementById('error-details');
+    const detailsText = document.getElementById('error-details-text');
+    if (details) {
+      detailsText.textContent = typeof details === 'string' ? details : JSON.stringify(details, null, 2);
+      detailsEl.style.display = '';
+    } else {
+      detailsEl.style.display = 'none';
+    }
     showScreen('error');
   }
 

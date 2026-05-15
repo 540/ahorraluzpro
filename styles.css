@@ -512,6 +512,31 @@ html, body {
   margin-bottom: 32px;
 }
 
+.error-details {
+  text-align: left;
+  margin-bottom: 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.error-details pre {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 /* --- Responsive --- */
 @media (min-width: 480px) {
   .landing-content h1 {
