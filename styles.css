@@ -1587,6 +1587,7 @@ html, body {
   #screen-landing.active {
     justify-content: center;
     min-height: 100vh;
+    overflow: hidden;
   }
 
   .landing-content {
@@ -1595,28 +1596,29 @@ html, body {
 
   .logo-mark {
     font-size: 28px;
+    margin-bottom: 2px;
   }
 
   .logo-tagline {
-    margin-bottom: 36px;
+    margin-bottom: 28px;
   }
 
   .landing-content h1 {
-    font-size: 48px;
+    font-size: 44px;
     letter-spacing: -1px;
     line-height: 1.1;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .subtitle {
-    font-size: 18px;
+    font-size: 17px;
     max-width: 520px;
-    margin-bottom: 36px;
+    margin-bottom: 28px;
   }
 
   .landing-steps {
     gap: 48px;
-    margin-bottom: 36px;
+    margin-bottom: 28px;
   }
 
   .landing-step {
@@ -1647,18 +1649,18 @@ html, body {
 
   .trust-badges {
     gap: 12px;
-    margin-top: 16px;
+    margin-top: 12px;
   }
 
   .privacy-note {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .faq {
     max-width: 500px;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 24px;
+    margin-top: 16px;
   }
 
   /* === LOADING === */
@@ -1795,12 +1797,12 @@ html, body {
   }
 
   .landing-content h1 {
-    font-size: 56px;
+    font-size: 52px;
     letter-spacing: -1.5px;
   }
 
   .subtitle {
-    font-size: 20px;
+    font-size: 19px;
     max-width: 560px;
   }
 
