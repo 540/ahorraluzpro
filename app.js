@@ -13,7 +13,8 @@
     error: document.getElementById('screen-error'),
   };
 
-  let html5QrCode = null;
+  let videoStream = null;
+  let scannerActive = false;
 
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -31,32 +32,85 @@
     showScreen('landing');
   }
 
-  // --- QR Scanner ---
-  function startScanner() {
+  // --- QR Scanner (BarcodeDetector native API + jsQR fallback) ---
+  async function startScanner() {
     showScreen('scanner');
-    const readerEl = document.getElementById('qr-reader');
-    readerEl.innerHTML = '';
+    const video = document.getElementById('qr-video');
+    const canvas = document.getElementById('qr-canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-    html5QrCode = new Html5Qrcode('qr-reader');
-    html5QrCode.start(
-      { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      onQrSuccess,
-      () => {} // ignore scan failures (continuous scanning)
-    ).catch(err => {
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      video.srcObject = videoStream;
+      await video.play();
+      scannerActive = true;
+
+      // Use native BarcodeDetector if available (Chrome 83+, Safari 17.2+)
+      const hasNativeDetector = 'BarcodeDetector' in window;
+      let detector = null;
+      if (hasNativeDetector) {
+        detector = new BarcodeDetector({ formats: ['qr_code'] });
+        console.log('Using native BarcodeDetector');
+      } else {
+        console.log('Using jsQR fallback');
+      }
+
+      function scanFrame() {
+        if (!scannerActive) return;
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          if (detector) {
+            // Native BarcodeDetector — better with screens, hardware-accelerated
+            detector.detect(video).then(barcodes => {
+              if (barcodes.length > 0) {
+                onQrSuccess(barcodes[0].rawValue);
+                return;
+              }
+              requestAnimationFrame(scanFrame);
+            }).catch(() => requestAnimationFrame(scanFrame));
+          } else {
+            // jsQR fallback
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: 'attemptBoth',
+            });
+            if (code && code.data) {
+              onQrSuccess(code.data);
+              return;
+            }
+            requestAnimationFrame(scanFrame);
+          }
+        } else {
+          requestAnimationFrame(scanFrame);
+        }
+      }
+
+      requestAnimationFrame(scanFrame);
+
+    } catch (err) {
       console.error('Error starting scanner:', err);
       showError(
         'No se pudo acceder a la camara',
-        'Asegurate de dar permiso de camara a esta web. Si el problema persiste, prueba desde otro navegador.'
+        'Asegurate de dar permiso de camara a esta web. Si el problema persiste, prueba desde otro navegador.',
+        { error: err.message }
       );
-    });
+    }
   }
 
   function stopScanner() {
-    if (html5QrCode) {
-      html5QrCode.stop().catch(() => {});
-      html5QrCode = null;
+    scannerActive = false;
+    if (videoStream) {
+      videoStream.getTracks().forEach(t => t.stop());
+      videoStream = null;
     }
+    const video = document.getElementById('qr-video');
+    if (video) video.srcObject = null;
   }
 
   // --- QR Success ---

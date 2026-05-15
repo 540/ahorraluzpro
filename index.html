@@ -36,7 +36,13 @@
       <button id="btn-back" class="btn-back" aria-label="Volver">&larr;</button>
       <span>Apunta al QR de tu factura</span>
     </div>
-    <div id="qr-reader"></div>
+    <div class="scanner-viewport">
+      <video id="qr-video" playsinline autoplay muted></video>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <div class="scanner-overlay">
+        <div class="scanner-frame"></div>
+      </div>
+    </div>
     <p class="scanner-hint">Aseg&uacute;rate de que el QR est&eacute; bien iluminado y centrado</p>
   </section>
 
@@ -214,7 +220,7 @@
     </div>
   </section>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
