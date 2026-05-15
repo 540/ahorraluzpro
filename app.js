@@ -361,6 +361,7 @@
       await completeStep('step-calc', 400);
 
       // Show results
+      displayConsumption(qrData, companyName);
       displayResults(results);
 
     } catch (e) {
@@ -418,7 +419,7 @@
       .sort((a, b) => a.importeSegundoAnio - b.importeSegundoAnio);
 
     if (sorted.length === 0) {
-      return buildEstimatedResults(qrData, currentAnnualCost, companyName);
+      return { current: { company: companyName, amount: currentAnnualCost }, best: { company: '—', offerName: '', amount: 0 }, alternatives: [], savings: 0, totalOffers: 0 };
     }
 
     const best = sorted[0];
@@ -449,6 +450,31 @@
       savings: currentAnnualCost - best.importeSegundoAnio,
       totalOffers: sorted.length,
     };
+  }
+
+  // --- Display consumption data from QR ---
+  function displayConsumption(qrData, companyName) {
+    const consumoTotal = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3
+      + qrData.consumoAnualP4 + qrData.consumoAnualP5 + qrData.consumoAnualP6;
+
+    document.getElementById('user-consumo-total').textContent = `${Math.round(consumoTotal)} kWh`;
+    document.getElementById('user-consumo-p1').textContent = `${Math.round(qrData.consumoAnualP1)} kWh`;
+    document.getElementById('user-consumo-p2').textContent = `${Math.round(qrData.consumoAnualP2)} kWh`;
+    document.getElementById('user-consumo-p3').textContent = `${Math.round(qrData.consumoAnualP3)} kWh`;
+    document.getElementById('user-potencia').textContent = `${qrData.potenciaP1} kW`;
+    document.getElementById('user-comercializadora').textContent = companyName;
+
+    // Periodo
+    if (qrData.inicioAnual && qrData.finAnual) {
+      const formatDate = (d) => new Date(d).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+      document.getElementById('user-periodo').textContent = `${formatDate(qrData.inicioAnual)} — ${formatDate(qrData.finAnual)}`;
+    } else {
+      document.getElementById('user-periodo').textContent = 'Ultimo ano';
+    }
+
+    // Tipo contrato
+    const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado/variable' };
+    document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || 'No disponible';
   }
 
   // --- Display ---
@@ -545,6 +571,18 @@
     }
     showScreen('error');
   }
+
+  // --- Help toggles ---
+  document.addEventListener('click', function (e) {
+    const toggle = e.target.closest('.help-toggle');
+    if (!toggle) return;
+    const helpId = toggle.getAttribute('data-help');
+    const helpEl = document.getElementById(helpId);
+    if (helpEl) {
+      helpEl.classList.toggle('visible');
+      toggle.classList.toggle('active');
+    }
+  });
 
   // --- Utils ---
   function formatCurrency(amount) {

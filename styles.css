@@ -303,6 +303,114 @@ html, body {
   width: 100%;
 }
 
+/* Sections */
+.section-block {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.help-toggle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.help-toggle:hover,
+.help-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.help-text {
+  display: none;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+}
+
+.help-text.visible {
+  display: block;
+}
+
+.help-text p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.help-text strong {
+  color: var(--text);
+}
+
+/* Consumption grid */
+.consumption-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.consumption-grid-secondary {
+  margin-bottom: 0;
+}
+
+.consumption-item {
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+}
+
+.consumption-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.consumption-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.consumption-item:first-child {
+  grid-column: 1 / -1;
+}
+
+.consumption-item:first-child .consumption-value {
+  font-size: 22px;
+  color: var(--accent);
+}
+
 .result-current {
   display: flex;
   flex-direction: column;
@@ -311,14 +419,6 @@ html, body {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   text-align: center;
-}
-
-.result-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
 }
 
 .result-company {
