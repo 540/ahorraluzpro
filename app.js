@@ -392,14 +392,30 @@
     return response.json();
   }
 
+  // Clean company names: Title Case, remove legal suffixes
+  function cleanCompanyName(raw) {
+    if (!raw) return '';
+    let name = raw.trim().replace(/"/g, '');
+    // Remove legal suffixes (with or without dots, commas)
+    name = name.replace(/,?\s*(S\.?L\.?U\.?|S\.?L\.?|S\.?A\.?U\.?|S\.?A\.?|SLU|S\.?COOP\.?|SOCIEDAD LIMITADA|SOCIEDAD AN[OÓ]NIMA)\s*\.?\s*$/i, '');
+    name = name.trim().replace(/[,.\s]+$/, '');
+    // Title Case if all caps
+    if (name === name.toUpperCase() && name.length > 3) {
+      name = name.toLowerCase()
+        .replace(/(?:^|\s|[-/])\S/g, c => c.toUpperCase())
+        // Keep common lowercase words
+        .replace(/\s(De|Del|Y|La|El|Los|Las|En)\s/g, (m) => m.toLowerCase());
+    }
+    return name;
+  }
+
   async function fetchCompanyName(code) {
-    if (!code) return 'Tu comercializadora actual';
-    // API needs the full code (R2-760), not stripped
+    if (!code) return 'Tu comercializadora';
     try {
       const response = await fetchFromApi(`nombrecodigo/${code}`);
       if (response.ok) {
-        const name = await response.text();
-        const clean = name.replace(/"/g, '').trim();
+        const raw = await response.text();
+        const clean = cleanCompanyName(raw);
         if (clean) return clean;
       }
     } catch (e) {
@@ -567,7 +583,7 @@
 
     function mapOffer(o) {
       return {
-        company: o.comercializadora || '',
+        company: cleanCompanyName(o.comercializadora || ''),
         offerName: o.oferta || '',
         amount: o.importeSegundoAnio,
         firstYearAmount: o.importePrimerAnio,
@@ -672,9 +688,9 @@
     const savingsEl = document.getElementById('result-savings');
     const altHeader = document.getElementById('alt-header');
 
-    // Best offer
+    // Best offer — show offer name prominently, company below
     const bestLabel = results.best.offerName
-      ? `${results.best.company} — ${results.best.offerName}`
+      ? `${results.best.offerName} \u2014 ${results.best.company}`
       : results.best.company;
     document.getElementById('result-best-company').textContent = bestLabel;
     document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
@@ -722,12 +738,12 @@
       document.getElementById('section-howto').style.display = '';
     }
 
-    // Alternatives
+    // Alternatives — show offer name first (more useful), then company
     results.alternatives.forEach((alt, i) => {
       const el = document.getElementById(`alt-${i + 1}`);
       if (el && alt) {
         el.querySelector('.alt-name').textContent = alt.offerName
-          ? `${alt.company} — ${alt.offerName}`
+          ? `${alt.offerName} (${alt.company})`
           : alt.company;
         el.querySelector('.alt-amount').textContent = formatCurrency(alt.amount);
         const saving = results.current.amount - alt.amount;
@@ -800,8 +816,9 @@
     const best = results.best;
 
     if (savings > 0) {
+      const bestName = best.offerName ? `<strong>${best.offerName}</strong> de ${best.company}` : best.company;
       parts.push(`Est\u00e1s pagando <strong>${formatCurrency(current.amount)}/a\u00f1o</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
-      parts.push(`Podr\u00edas pagar <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> con ${best.company}. Eso son <strong>${formatCurrency(savings)} menos al a\u00f1o</strong>.`);
+      parts.push(`Podr\u00edas pagar <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> con ${bestName}. Eso son <strong>${formatCurrency(savings)} menos al a\u00f1o</strong>.`);
 
       if (results.currentCompanyRank) {
         parts.push(`La mejor oferta de ${current.company} est\u00e1 en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
