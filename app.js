@@ -96,8 +96,8 @@
     } catch (err) {
       console.error('Error starting scanner:', err);
       showError(
-        'No se pudo acceder a la camara',
-        'Asegurate de dar permiso de camara a esta web. Si el problema persiste, prueba desde otro navegador.',
+        'No se pudo acceder a la c\u00e1mara',
+        'Aseg\u00farate de dar permiso de c\u00e1mara a esta web. Si el problema persiste, prueba desde otro navegador.',
         { error: err.message }
       );
     }
@@ -122,7 +122,7 @@
     if (!decodedText.includes('comparador.cnmc.gob.es') && !decodedText.includes('cnmc.es')) {
       showError(
         'Este QR no es de una factura de luz',
-        'El codigo QR debe ser el que aparece en tu factura de electricidad. Es una URL al comparador de la CNMC.',
+        'El c\u00f3digo QR debe ser el que aparece en tu factura de electricidad. Es una URL al comparador de la CNMC.',
         { qrContent: decodedText }
       );
       return;
@@ -424,8 +424,8 @@
         console.log('Parsed QR data:', JSON.stringify(qrData, null, 2));
       } catch (e) {
         showError(
-          'QR no valido',
-          'El codigo QR no contiene datos validos de una factura de luz. Asegurate de escanear el QR correcto.',
+          'QR no v\u00e1lido',
+          'El c\u00f3digo QR no contiene datos v\u00e1lidos de una factura de luz. Aseg\u00farate de escanear el QR correcto.',
           { error: e.message, qrUrl: url, stack: e.stack }
         );
         return;
@@ -438,6 +438,7 @@
         showError(
           'Datos insuficientes en el QR',
           'El QR de tu factura no contiene datos de consumo. Esto puede ocurrir si la comercializadora no ha informado correctamente el QR. Contacta con tu comercializadora.'
+
         );
         return;
       }
@@ -456,11 +457,11 @@
 
       if (apiError || !offers || !offers.resultadoComparador || offers.resultadoComparador.length === 0) {
         const reason = apiError
-          ? `Error de conexion: ${apiError.message}`
+          ? `Error de conexi\u00f3n: ${apiError.message}`
           : 'El comparador no ha devuelto ofertas para tu perfil de consumo';
         showError(
           'No hemos podido obtener ofertas reales',
-          `${reason}. Puedes consultar directamente el comparador oficial de la CNMC escaneando el QR con la camara de tu movil (sin usar esta app) o visitando comparador.cnmc.gob.es.`,
+          `${reason}. Puedes consultar directamente el comparador oficial de la CNMC escaneando el QR con la c\u00e1mara de tu m\u00f3vil (sin usar esta app) o visitando comparador.cnmc.gob.es.`,
           {
             error: apiError ? apiError.message : 'Sin ofertas en la respuesta',
             codigoPostal: cnmcParams.codigoPostal,
@@ -491,7 +492,7 @@
       console.error('Error processing QR:', e);
       showError(
         'Error al procesar tu factura',
-        'Ha ocurrido un error inesperado. Por favor, intentalo de nuevo.',
+        'Ha ocurrido un error inesperado. Por favor, int\u00e9ntalo de nuevo.',
         { error: e.message, stack: e.stack }
       );
     }
@@ -600,7 +601,7 @@
 
     // Profile card
     document.getElementById('user-comercializadora').textContent = companyName;
-    const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado' };
+    const tipos = { 0: 'Precio fijo', 1: 'Fijo no est\u00e1ndar', 2: 'Indexado' };
     document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || '—';
 
     document.getElementById('user-consumo-total').textContent = `${Math.round(consumoTotal).toLocaleString('es-ES')} kWh`;
@@ -633,7 +634,7 @@
       const fin = qrData.finAnual ? formatDate(qrData.finAnual) : 'actualidad';
       document.getElementById('user-periodo').textContent = `${inicio} — ${fin}`;
     } else {
-      document.getElementById('user-periodo').textContent = 'Ultimo ano';
+      document.getElementById('user-periodo').textContent = '\u00DAltimo a\u00f1o';
     }
 
     // Bill breakdown
@@ -657,8 +658,7 @@
 
   // --- Display ---
   function displayResults(results, qrData) {
-    // Current
-    document.getElementById('result-current-company').textContent = results.current.company;
+    // Current annual cost
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
     document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
 
@@ -690,10 +690,10 @@
       altHeader.textContent = 'La competencia';
 
       insightEl.innerHTML = 'Buenas noticias: <strong>ya tienes una de las mejores tarifas del mercado</strong> para tu perfil de consumo. ' +
-        results.current.company + ' esta en el puesto <strong>#' + results.currentCompanyRank + ' de ' + results.totalOffers + '</strong> ofertas disponibles. ' +
+        results.current.company + ' est\u00e1 en el puesto <strong>#' + results.currentCompanyRank + ' de ' + results.totalOffers + '</strong> ofertas disponibles. ' +
         'Te mostramos la competencia por si quieres comparar.';
 
-      savingsEl.textContent = 'Ya estas entre las mejores tarifas';
+      savingsEl.textContent = 'Ya est\u00e1s entre las mejores tarifas';
       savingsEl.classList.add('negative');
       savingsEl.classList.remove('positive');
 
@@ -702,7 +702,7 @@
       bestHeader.textContent = 'Mejor oferta del mercado';
       bestBadge.textContent = 'Mejor oferta';
       bestBadge.classList.remove('badge-good');
-      altHeader.textContent = 'Tambien podrias considerar';
+      altHeader.textContent = 'Tambi\u00e9n podr\u00edas considerar';
 
       // Build personalized explanation
       const insight = buildInsight(results, qrData);
@@ -710,11 +710,11 @@
 
       if (results.savings > 0) {
         const savingsMonthly = results.savings / 12;
-        savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/ano (${formatCurrency(savingsMonthly)}/mes)`;
+        savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/a\u00f1o (${formatCurrency(savingsMonthly)}/mes)`;
         savingsEl.classList.add('positive');
         savingsEl.classList.remove('negative');
       } else {
-        savingsEl.textContent = 'Tu tarifa actual ya es competitiva';
+        savingsEl.textContent = 'Tu tarifa actual ya es muy competitiva';
         savingsEl.classList.add('negative');
         savingsEl.classList.remove('positive');
       }
@@ -742,7 +742,7 @@
 
     // Show data source badge
     const disclaimer = document.querySelector('.result-disclaimer p');
-    disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no esta afiliado con ninguna comercializadora.`;
+    disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no est\u00e1 afiliado con ninguna comercializadora.`;
 
     showScreen('result');
   }
@@ -800,11 +800,11 @@
     const best = results.best;
 
     if (savings > 0) {
-      parts.push(`Estas pagando <strong>${formatCurrency(current.amount)}/ano</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
-      parts.push(`Podrias pagar <strong>${formatCurrency(best.amount)}/ano</strong> con ${best.company}. Eso son <strong>${formatCurrency(savings)} menos al ano</strong>.`);
+      parts.push(`Est\u00e1s pagando <strong>${formatCurrency(current.amount)}/a\u00f1o</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
+      parts.push(`Podr\u00edas pagar <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> con ${best.company}. Eso son <strong>${formatCurrency(savings)} menos al a\u00f1o</strong>.`);
 
       if (results.currentCompanyRank) {
-        parts.push(`La mejor oferta de ${current.company} esta en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
+        parts.push(`La mejor oferta de ${current.company} est\u00e1 en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
       }
 
       // Explain WHY this offer is good for their profile
@@ -816,9 +816,9 @@
           if (pctValle >= 40) {
             parts.push(`El <strong>${pctValle}%</strong> de tu consumo es en horario valle (noches y fines de semana), por lo que te conviene una tarifa que premie ese horario.`);
           } else if (pctPunta >= 40) {
-            parts.push(`El <strong>${pctPunta}%</strong> de tu consumo es en horario punta. Una tarifa con precio unico te protege de los precios altos en esas horas.`);
+            parts.push(`El <strong>${pctPunta}%</strong> de tu consumo es en horario punta. Una tarifa con precio \u00fanico te protege de los precios altos en esas horas.`);
           } else {
-            parts.push(`Tu consumo esta bastante repartido entre horarios. Una tarifa con precio fijo unico puede darte estabilidad.`);
+            parts.push(`Tu consumo est\u00e1 bastante repartido entre horarios. Una tarifa con precio fijo \u00fanico puede darte estabilidad.`);
           }
         }
       }
