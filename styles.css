@@ -1733,12 +1733,11 @@ html, body {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-areas:
-      "hero    hero    hero"
-      "comp    comp    comp"
+      "hero    comp    comp"
       "insight best    alts"
       "bill    profile howto"
       "disc    disc    restart";
-    gap: 14px;
+    gap: 12px;
     align-content: start;
   }
 
@@ -1759,54 +1758,76 @@ html, body {
   .result-disclaimer   { grid-area: disc;    margin: 0; padding-top: 4px;
                           border-top: none; text-align: left; align-self: center; }
 
-  /* Compact sizing for dashboard density */
-  .savings-hero-amount { font-size: 44px; }
-  .savings-hero-sub    { font-size: 14px; }
-  .savings-hero-label  { margin-bottom: 8px; }
+  /* Compact sizing for dashboard density — aggressive vertical compression */
+  .savings-hero        { padding: 16px 24px; }
+  .savings-hero-amount { font-size: 36px; line-height: 1.05; }
+  .savings-hero-sub    { font-size: 12px; margin-top: 4px; }
+  .savings-hero-label  { font-size: 10px; margin-bottom: 4px; letter-spacing: 1.5px; }
 
-  .comparison-card     { padding: 18px 16px; }
-  .comparison-amount   { font-size: 26px; }
-  .comparison-company  { font-size: 13px; min-height: auto; margin-bottom: 8px; }
-  .comparison-label    { margin-bottom: 6px; }
+  .comparison-card     { padding: 12px 14px; }
+  .comparison-amount   { font-size: 22px; }
+  .comparison-company  { font-size: 12px; min-height: auto; margin-bottom: 4px; }
+  .comparison-label    { margin-bottom: 4px; font-size: 9px; letter-spacing: 1.2px; }
+  .comparison-monthly  { font-size: 11px; margin-top: 2px; }
 
-  .insight-card        { padding: 18px 20px; height: 100%; }
-  .insight-card p      { font-size: 13px; line-height: 1.65; }
+  .section-header      { margin-bottom: 6px; }
+  .section-header h3   { font-size: 10px; letter-spacing: 1.2px; }
+  .help-toggle         { min-width: 22px; min-height: 22px; width: 22px; height: 22px;
+                          font-size: 10px; }
 
-  .result-best         { padding: 20px 18px; height: 100%; justify-content: center; }
-  .result-best-company { font-size: 15px; }
-  .result-best-offer-name { font-size: 12px; margin-bottom: 10px; }
-  .result-badge        { margin-bottom: 12px; }
+  .insight-card        { padding: 14px 16px; height: 100%; border-radius: var(--radius); }
+  .insight-card p      { font-size: 12px; line-height: 1.55; }
+  .insight-label       { font-size: 9px; margin-bottom: 6px; }
+
+  .result-best         { padding: 14px 14px; height: 100%; justify-content: center;
+                          border-radius: var(--radius); }
+  .result-best-company { font-size: 14px; }
+  .result-best-offer-name { font-size: 11px; margin-bottom: 8px; }
+  .result-badge        { padding: 3px 10px; font-size: 9px; margin-bottom: 8px; }
+  .result-savings      { margin-top: 8px; padding: 5px 14px; font-size: 12px; }
 
   /* Alternatives stack vertically inside their column */
   .alt-grid {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
-  .alt-offer           { padding: 14px 16px; gap: 6px; margin: 0; }
-  .alt-name            { font-size: 13px; }
-  .alt-amount          { font-size: 16px; }
-  .alt-saving          { font-size: 12px; }
+  .alt-offer           { padding: 10px 12px; gap: 4px; margin: 0;
+                          border-radius: var(--radius); }
+  .alt-name            { font-size: 12px; }
+  .alt-amount          { font-size: 14px; }
+  .alt-saving          { font-size: 11px; }
+  .alt-offer-name      { font-size: 10px; }
 
-  .result-current      { padding: 18px 20px; }
-  .bill-row            { padding: 8px 0; font-size: 12px; }
-  .bill-row-total      { padding-top: 12px; font-size: 13px; }
+  .result-current      { padding: 14px 16px; border-radius: var(--radius); }
+  .bill-row            { padding: 5px 0; font-size: 11px; }
+  .bill-row-total      { padding-top: 7px; font-size: 12px; }
 
-  .profile-card        { padding: 18px 20px; }
-  .profile-company     { margin-bottom: 14px; padding-bottom: 12px; }
-  .profile-company-name{ font-size: 14px; }
-  .profile-total       { margin-bottom: 16px; }
-  .profile-total-value { font-size: 22px; }
-  .profile-bars        { gap: 10px; margin-bottom: 16px; }
-  .bar-track           { height: 6px; }
-  .profile-details     { padding-top: 14px; gap: 12px; }
-  .profile-detail-value{ font-size: 13px; }
+  .profile-card        { padding: 14px 16px; border-radius: var(--radius); }
+  .profile-company     { margin-bottom: 8px; padding-bottom: 6px; }
+  .profile-company-name{ font-size: 13px; }
+  .profile-contract    { font-size: 10px; padding: 2px 8px; }
+  .profile-total       { margin-bottom: 10px; }
+  .profile-total-value { font-size: 18px; }
+  .profile-total-label { font-size: 9px; margin-top: 2px; letter-spacing: 1.2px; }
+  .profile-bars        { gap: 6px; margin-bottom: 10px; }
+  .bar-group           { gap: 4px; }
+  .bar-track           { height: 5px; }
+  .bar-label           { font-size: 11px; }
+  .bar-value           { font-size: 11px; }
+  .profile-details     { padding-top: 8px; gap: 10px; }
+  .profile-detail-label{ font-size: 9px; margin-bottom: 2px; }
+  .profile-detail-value{ font-size: 12px; }
 
-  .result-info         { padding: 18px 20px; }
-  .result-info-title   { font-size: 13px; margin-bottom: 8px; }
-  .result-info p       { font-size: 12px; line-height: 1.55; }
-  .info-checklist      { margin-top: 10px; gap: 6px; }
-  .info-checklist li   { font-size: 12px; }
+  .result-info         { padding: 14px 16px; border-radius: var(--radius); }
+  .result-info-title   { font-size: 12px; margin-bottom: 6px; }
+  .result-info p       { font-size: 11px; line-height: 1.5; }
+  .info-checklist      { margin-top: 8px; gap: 4px; }
+  .info-checklist li   { font-size: 11px; gap: 8px; }
+  .info-checklist li .check-icon { width: 16px; height: 16px; font-size: 10px; }
+
+  .result-disclaimer p { font-size: 10px; line-height: 1.4; }
+  #btn-restart         { padding: 10px 24px; font-size: 13px; }
 }
 
 /* ===================================================================
