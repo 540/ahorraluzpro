@@ -58,14 +58,12 @@ Nombre de comercializadora por codigo.
 ### GET publico/logo/{id}
 Logo de comercializadora.
 
-## Endpoints de ofertas (pendiente de validar parametros)
+## Endpoints de ofertas (VALIDADOS - funcionan)
 
 ### GET publico/ofertas/electricidad
-Listado principal de ofertas de electricidad.
+Listado principal de ofertas de electricidad. **Validado: devuelve 110+ ofertas.**
 
-**Parametros** (query string, dos objetos combinados):
-- Objeto 1: formulario del usuario (consumo, potencia, tarifa, etc.)
-- Objeto 2: segundo parametro (posiblemente paginacion/orden)
+**Parametros** (query string, todos obligatorios):
 
 **Estructura del formulario** (extraida del JS):
 ```javascript
@@ -119,58 +117,97 @@ Listado principal de ofertas de electricidad.
 }
 ```
 
-**Estado actual**: Devuelve 500 con los parametros probados. Necesita captura de peticion real desde DevTools para obtener la combinacion exacta.
-
-### GET publico/ofertas/pvpc
-Ofertas de tarifa regulada PVPC.
-
-### GET publico/ofertas/simularpvpc
-Simulacion de coste con PVPC.
-
-### GET publico/ofertas/gas
-Ofertas de gas.
-
-### GET publico/ofertas/conjuntas
-Ofertas combinadas luz+gas.
-
-### GET publico/comparador/calculoQR
-Calculo directo desde parametros del QR.
-
-### POST publico/comparador/qre
-Auditoria/logging del QR. Requiere campos `estado` y `qrCode`.
-
-## Flujo interno del comparador
-
-1. Usuario accede a `/comparador/QRE?cp=28001&pP1=3.5&...`
-2. Middleware Nuxt ejecuta `gestionParametrosRouteQR()`:
-   - Parsea query params del QR
-   - Los mapea al formulario interno
-   - Obtiene perfil de consumo si no existe (llama a `/api/publico/curvas`)
-   - Codifica formulario como hex string
-   - Navega a `/comparador/listado/{hexstring}`
-3. Componente listado decodifica hex → formulario
-4. Llama a `GET /api/publico/ofertas/electricidad?{formulario}&{paginacion}`
-5. Renderiza lista de ofertas ordenadas por coste anual
-
-## Codificacion hex de parametros
-
-Los parametros del formulario se codifican en un string binario y luego a hexadecimal:
+**Parametros adicionales obligatorios** (descubiertos via HAR capture):
 ```javascript
-// Posiciones en el string binario:
-// 0: tipoSuministro (1=E, 2=G)
-// 1: tarifa
-// 2: serviciosAdicionales+permanencia
-// 3-7: codigoPostal
-// 8-42: potencias (6 franjas x formato XX.XXX)
-// 43-84: consumos (6 franjas + anuales)
-// ... etc (500+ caracteres)
+{
+  // ... los anteriores ...
+  autoconsumo: false,
+  importe: 0,
+  mecanismoAjuste: 0,
+  mecanismoAjusteIVA: 0,
+  importeMecanismoAjustePunta: 0,
+  importeMecanismoAjusteLlano: 0,
+  importeMecanismoAjusteValle: 0,
+  precioConsumoMecanismoAjusteTotal: 0,
+  precioConsumoMecanismoAjustePunta: 0,
+  precioConsumoMecanismoAjusteLlano: 0,
+  precioConsumoMecanismoAjusteValle: 0,
+  perfilConsumo: 10,
+  dateInicio: 1747344140063,   // timestamp ms (inicio periodo)
+  dateFin: 1778880140063,      // timestamp ms (fin periodo)
+  tc: 0,                       // tipo contrato
+  bs: 0,                       // bono social
+  impSA: 0,                    // importe servicios adicionales
+  impOtros: 0,
+  exc: 0,                      // excedentes autoconsumo
+  reg: 0,                      // tipo factura
+  impOtrosConIE: 0,
+  impOtrosSinIE: 0,
+  pmaxP1: 0,                   // potencia maxima demandada P1
+  pmaxP2: 0,                   // potencia maxima demandada P2
+  fFact: 1778880140063,        // timestamp ms fecha facturacion
+  dtoBS: 0, finBS: 0, ajuste: 0,
+  impPot: 0, impEner: 0, dto: 0,
+  prP1: 0, prP2: 0,
+  prE1: 0, prE2: 0, prE3: 0,
+  cfP1flex: 0, cfP2flex: 0,
+  cambio: 0, promo: 0, verde: 0, rev: 0, trampeo: 0,
+  cups: "0000"                 // ultimos 4 chars del CUPS
+}
 ```
 
-La funcion `Ke.objToParams()` codifica y `Ke.gestionParametrosRoute()` decodifica.
+**CLAVE**: `dateInicio`, `dateFin` y `fFact` deben ser timestamps en milisegundos. Sin ellos, la API devuelve 0 ofertas.
+`serviciosAdicionales=2` y `permanencia=2` para ver todas las ofertas sin filtrar.
+
+### Estructura de respuesta (VALIDADA)
+
+```json
+{
+  "resultadoComparador": [
+    {
+      "id": 7044,
+      "idComercializadora": 196,
+      "comercializadora": "DOMESTICA GAS Y ELECTRICIDAD SLU",
+      "oferta": "Visalia Luz Fijo Empieza sin Pagar",
+      "importePrimerAnio": 21.36,
+      "importeSegundoAnio": 49.38,
+      "importeEstimadoPenalizacion": 15.62,
+      "penalizacion": true,
+      "verde": true,
+      "serviciosAdicionales": false,
+      "tipoElectricidad": "TE",
+      "tipoRevision": 5,
+      "unicaFranja": "N",
+      "peaje": "4",
+      "mecanismoAjuste": "N",
+      "tarifa": 4,
+      "tienePrecioUnico": "S",
+      "autoconsumo": false,
+      "validez": "Válida sólo para consumidores domésticos"
+    }
+  ],
+  "resultadoComparadorConAjustePrecio": [...],
+  "resultadoComparadorSinAjustePrecio": [...],
+  "resultadoComparadorConjuntas": [...],
+  "resultadoFacturaQR": null,
+  "consumo1": 900.0,
+  "consumo2": 800.0,
+  "consumo3": 900.0,
+  "consumo4": 0.0,
+  "consumo5": 0.0,
+  "consumo6": 0.0
+}
+```
+
+**Notas sobre la respuesta:**
+- `importePrimerAnio`: coste anual con promociones (puede ser artificialmente bajo)
+- `importeSegundoAnio`: coste anual real sin promocion (usar este para comparar)
+- `importeEstimadoPenalizacion`: coste si cancelas antes de que acabe el contrato
+- `penalizacion`: si la oferta tiene clausula de permanencia
+- `verde`: si la energia es de origen renovable
+- Total de ofertas: ~110 para una busqueda tipica
 
 ## Proximos pasos
 
-1. **Capturar peticion real**: Abrir comparador.cnmc.gob.es en Chrome DevTools > Network, hacer una busqueda real, y copiar la URL completa de la llamada a `/api/publico/ofertas/electricidad`
-2. **Validar respuesta**: Confirmar estructura JSON de la respuesta de ofertas
-3. **Documentar campos de respuesta**: Nombre oferta, comercializadora, precio anual, etc.
-4. **Contactar CNMC**: Escribir a info.comparador@cnmc.es para solicitar acceso formal
+1. **Contactar CNMC**: Escribir a info.comparador@cnmc.es para solicitar acceso formal
+2. **Monitorizar**: Alertas si la API cambia o deja de responder

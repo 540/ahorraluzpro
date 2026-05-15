@@ -151,6 +151,13 @@
     const consumoAnualE = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3
       + qrData.consumoAnualP4 + qrData.consumoAnualP5 + qrData.consumoAnualP6;
 
+    // Timestamps for date range (ms since epoch)
+    const now = Date.now();
+    const yearAgo = now - (365 * 24 * 60 * 60 * 1000);
+    const dateInicio = qrData.inicioAnual ? new Date(qrData.inicioAnual).getTime() : yearAgo;
+    const dateFin = qrData.finAnual ? new Date(qrData.finAnual).getTime() : now;
+    const fFact = qrData.finFact ? new Date(qrData.finFact).getTime() : now;
+
     return {
       tipoSuministro: 'E',
       codigoPostal: qrData.codigoPostal,
@@ -169,32 +176,75 @@
       consumoCuartaFranja: qrData.consumoAnualP4,
       consumoQuintaFranja: qrData.consumoAnualP5,
       consumoSextaFranja: qrData.consumoAnualP6,
-      consumoAnualEQr: consumoAnualE,
-      consumoPrimeraFranjaQr: qrData.consumoAnualP1,
-      consumoSegundaFranjaQr: qrData.consumoAnualP2,
-      consumoTerceraFranjaQr: qrData.consumoAnualP3,
-      consumoCuartaFranjaQr: qrData.consumoAnualP4,
-      consumoQuintaFranjaQr: qrData.consumoAnualP5,
-      consumoSextaFranjaQr: qrData.consumoAnualP6,
-      consumoAnualEPQr: consumoAnualE,
-      consumoPrimeraFranjaPQr: qrData.consumoAnualP1,
-      consumoSegundaFranjaPQr: qrData.consumoAnualP2,
-      consumoTerceraFranjaPQr: qrData.consumoAnualP3,
-      consumoCuartaFranjaPQr: qrData.consumoAnualP4,
-      consumoQuintaFranjaPQr: qrData.consumoAnualP5,
-      consumoSextaFranjaPQr: qrData.consumoAnualP6,
+      consumoAnualEQr: 0,
+      consumoPrimeraFranjaQr: 0,
+      consumoSegundaFranjaQr: 0,
+      consumoTerceraFranjaQr: 0,
+      consumoCuartaFranjaQr: 0,
+      consumoQuintaFranjaQr: 0,
+      consumoSextaFranjaQr: 0,
+      consumoAnualEPQr: 0,
+      consumoPrimeraFranjaPQr: 0,
+      consumoSegundaFranjaPQr: 0,
+      consumoTerceraFranjaPQr: 0,
+      consumoCuartaFranjaPQr: 0,
+      consumoQuintaFranjaPQr: 0,
+      consumoSextaFranjaPQr: 0,
       tarifa: qrData.peaje === 19 ? 5 : 4,  // 4=2.0TD, 5=3.0TD
       consumoAnualG: 0,
       consumoAnualGOrig: 0,
-      serviciosAdicionales: 1,
-      permanencia: 1,
+      serviciosAdicionales: 2,
+      permanencia: 2,
       vivienda: true,
       factura: true,
       energiaAutoconsumo: 0,
       idAuditoriaQR: 0,
       potenciaAutoconsumo: 0,
       revisionPrecios: 2,
+      autoconsumo: false,
+      importe: 0,
+      mecanismoAjuste: 0,
+      mecanismoAjusteIVA: 0,
+      importeMecanismoAjustePunta: 0,
+      importeMecanismoAjusteLlano: 0,
+      importeMecanismoAjusteValle: 0,
+      precioConsumoMecanismoAjusteTotal: 0,
+      precioConsumoMecanismoAjustePunta: 0,
+      precioConsumoMecanismoAjusteLlano: 0,
+      precioConsumoMecanismoAjusteValle: 0,
       perfilConsumo: 10,
+      dateInicio: dateInicio,
+      dateFin: dateFin,
+      tc: qrData.tipoContrato,
+      bs: qrData.bonoSocial,
+      impSA: qrData.importeServicios,
+      impOtros: qrData.importeOtros,
+      exc: qrData.excedentes,
+      reg: qrData.tipoFactura,
+      impOtrosConIE: 0,
+      impOtrosSinIE: 0,
+      pmaxP1: qrData.pmaxP1,
+      pmaxP2: qrData.pmaxP2,
+      fFact: fFact,
+      dtoBS: 0,
+      finBS: 0,
+      ajuste: 0,
+      impPot: 0,
+      impEner: 0,
+      dto: 0,
+      prP1: 0,
+      prP2: 0,
+      prE1: 0,
+      prE2: 0,
+      prE3: 0,
+      cfP1flex: 0,
+      cfP2flex: 0,
+      cambio: 0,
+      promo: 0,
+      verde: 0,
+      rev: 0,
+      trampeo: 0,
+      cups: qrData.cups ? qrData.cups.slice(-4) : '0000',
     };
   }
 
@@ -289,7 +339,7 @@
       const currentAnnualCost = estimateAnnualCost(qrData);
 
       let results;
-      if (offers && Array.isArray(offers) && offers.length > 0) {
+      if (offers && offers.resultadoComparador && offers.resultadoComparador.length > 0) {
         results = processOffers(offers, qrData, currentAnnualCost, companyName);
       } else {
         results = buildEstimatedResults(qrData, currentAnnualCost, companyName);
@@ -344,11 +394,13 @@
   }
 
   // --- Process CNMC offers ---
-  function processOffers(offers, qrData, currentAnnualCost, companyName) {
-    // Sort by annual cost (ascending)
+  function processOffers(apiResponse, qrData, currentAnnualCost, companyName) {
+    const offers = apiResponse.resultadoComparador || [];
+
+    // Sort by second year cost (more representative than promo first year)
     const sorted = offers
-      .filter(o => o.importeAnual != null)
-      .sort((a, b) => a.importeAnual - b.importeAnual);
+      .filter(o => o.importeSegundoAnio != null && o.importeSegundoAnio > 0)
+      .sort((a, b) => a.importeSegundoAnio - b.importeSegundoAnio);
 
     if (sorted.length === 0) {
       return buildEstimatedResults(qrData, currentAnnualCost, companyName);
@@ -364,16 +416,23 @@
         amount: currentAnnualCost,
       },
       best: {
-        company: best.nombreComercializadora || best.comercializadora || 'Mejor oferta',
-        offerName: best.nombreOferta || '',
-        amount: best.importeAnual,
+        company: best.comercializadora || 'Mejor oferta',
+        offerName: best.oferta || '',
+        amount: best.importeSegundoAnio,
+        firstYearAmount: best.importePrimerAnio,
+        hasPenalty: best.penalizacion,
+        isGreen: best.verde,
       },
       alternatives: [alt1, alt2].filter(Boolean).map(o => ({
-        company: o.nombreComercializadora || o.comercializadora || '',
-        offerName: o.nombreOferta || '',
-        amount: o.importeAnual,
+        company: o.comercializadora || '',
+        offerName: o.oferta || '',
+        amount: o.importeSegundoAnio,
+        firstYearAmount: o.importePrimerAnio,
+        hasPenalty: o.penalizacion,
+        isGreen: o.verde,
       })),
-      savings: currentAnnualCost - (best.importeAnual || currentAnnualCost),
+      savings: currentAnnualCost - best.importeSegundoAnio,
+      totalOffers: sorted.length,
     };
   }
 
