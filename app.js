@@ -352,7 +352,7 @@
   // Proxy needed: CNMC nginx blocks requests with Origin header (403)
   // Deploy proxy-worker.js to Cloudflare Workers and set URL here
   // For local dev: use direct URL (works without Origin from file://)
-  const PROXY_BASE = 'https://ahorraluz-proxy.lewricka.workers.dev/api/publico/';
+  const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
 
   async function fetchFromApi(path) {
