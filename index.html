@@ -125,19 +125,40 @@
         </div>
       </div>
 
-      <!-- Seccion: Tu tarifa actual -->
+      <!-- Seccion: Tu factura actual -->
       <div class="section-block">
         <div class="section-header">
-          <h3>Tu tarifa actual</h3>
+          <h3>Tu factura actual</h3>
           <button class="help-toggle" data-help="help-tarifa" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-tarifa">
-          <p>Este es lo que estimamos que pagas al a&ntilde;o con tu comercializadora actual, basado en tu consumo. La factura de la luz tiene dos partes principales: el <strong>t&eacute;rmino de potencia</strong> (lo que pagas por tener la luz disponible, aunque no la uses) y el <strong>t&eacute;rmino de energ&iacute;a</strong> (lo que pagas por cada kWh consumido). A eso se suman impuestos y alquiler del contador.</p>
+          <p>Estos datos vienen de tu &uacute;ltima factura. La factura tiene dos partes principales: el <strong>t&eacute;rmino de potencia</strong> (lo que pagas por tener la luz disponible, aunque no la uses) y el <strong>t&eacute;rmino de energ&iacute;a</strong> (lo que pagas por cada kWh que consumes). A eso se suman el impuesto el&eacute;ctrico (5,11%), el IVA (21%) y el alquiler del contador.</p>
         </div>
         <div class="result-current">
           <span class="result-company" id="result-current-company">—</span>
-          <span class="result-amount" id="result-current-amount">—</span>
-          <span class="result-period">estimado/a&ntilde;o</span>
+          <div class="bill-breakdown">
+            <div class="bill-row">
+              <span>Potencia</span>
+              <span id="bill-potencia">—</span>
+            </div>
+            <div class="bill-row">
+              <span>Energ&iacute;a</span>
+              <span id="bill-energia">—</span>
+            </div>
+            <div class="bill-row">
+              <span>Otros conceptos</span>
+              <span id="bill-otros">—</span>
+            </div>
+            <div class="bill-row bill-row-total">
+              <span>&Uacute;ltima factura</span>
+              <span id="bill-total">—</span>
+            </div>
+          </div>
+          <div class="bill-annual">
+            <span class="bill-annual-label">Estimado anual</span>
+            <span class="result-amount" id="result-current-amount">—</span>
+            <span class="bill-monthly" id="result-current-monthly">—</span>
+          </div>
         </div>
       </div>
 
@@ -158,7 +179,7 @@
           <span class="result-badge">Mejor oferta</span>
           <span class="result-company" id="result-best-company">—</span>
           <span class="result-amount result-amount-best" id="result-best-amount">—</span>
-          <span class="result-period">estimado/a&ntilde;o</span>
+          <span class="result-period">estimado/a&ntilde;o <span id="result-best-monthly"></span></span>
           <div class="result-savings" id="result-savings">—</div>
         </div>
       </div>

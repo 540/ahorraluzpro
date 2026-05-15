@@ -394,12 +394,13 @@
 
   async function fetchCompanyName(code) {
     if (!code) return 'Tu comercializadora actual';
+    // API needs the full code (R2-760), not stripped
     try {
-      const cleanCode = code.replace('R2-', '');
-      const response = await fetchFromApi(`nombrecodigo/${cleanCode}`);
+      const response = await fetchFromApi(`nombrecodigo/${code}`);
       if (response.ok) {
         const name = await response.text();
-        return name.replace(/"/g, '') || code;
+        const clean = name.replace(/"/g, '').trim();
+        if (clean) return clean;
       }
     } catch (e) {
       // ignore
@@ -587,20 +588,40 @@
     document.getElementById('user-comercializadora').textContent = companyName;
 
     // Periodo
-    if (qrData.inicioAnual && qrData.finAnual) {
-      const formatDate = (d) => new Date(d).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
-      document.getElementById('user-periodo').textContent = `${formatDate(qrData.inicioAnual)} — ${formatDate(qrData.finAnual)}`;
+    const formatDate = (d) => {
+      const date = new Date(d);
+      return isNaN(date) ? '' : date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    if (qrData.inicioAnual) {
+      const inicio = formatDate(qrData.inicioAnual);
+      const fin = qrData.finAnual ? formatDate(qrData.finAnual) : 'actualidad';
+      document.getElementById('user-periodo').textContent = `${inicio} — ${fin}`;
     } else {
       document.getElementById('user-periodo').textContent = 'Ultimo ano';
     }
 
     // Tipo contrato
     const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado/variable' };
-    let tipoLabel = tipos[qrData.tipoContrato] || 'No disponible';
-    if (qrData.tipoContratoRaw && qrData.tipoContratoRaw !== String(qrData.tipoContrato)) {
-      tipoLabel += ` (${qrData.tipoContratoRaw})`;
+    document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || 'No disponible';
+
+    // Desglose factura actual
+    if (qrData.importePotencia > 0 || qrData.importeEnergia > 0) {
+      document.getElementById('bill-potencia').textContent = formatCurrency(qrData.importePotencia);
+      document.getElementById('bill-energia').textContent = formatCurrency(qrData.importeEnergia);
+      const otros = (qrData.importeTotal || 0) - (qrData.importePotencia || 0) - (qrData.importeEnergia || 0);
+      document.getElementById('bill-otros').textContent = formatCurrency(Math.max(0, otros));
+    } else {
+      document.getElementById('bill-potencia').textContent = '—';
+      document.getElementById('bill-energia').textContent = '—';
+      document.getElementById('bill-otros').textContent = '—';
     }
-    document.getElementById('user-tipo-contrato').textContent = tipoLabel;
+
+    if (qrData.importeTotal > 0) {
+      document.getElementById('bill-total').textContent = formatCurrency(qrData.importeTotal);
+    } else {
+      document.getElementById('bill-total').textContent = '—';
+    }
   }
 
   // --- Display ---
@@ -608,6 +629,7 @@
     // Current
     document.getElementById('result-current-company').textContent = results.current.company;
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
+    document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
 
     // Best
     const bestLabel = results.best.offerName
@@ -615,11 +637,13 @@
       : results.best.company;
     document.getElementById('result-best-company').textContent = bestLabel;
     document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
+    document.getElementById('result-best-monthly').textContent = `(${formatCurrency(results.best.amount / 12)}/mes)`;
 
     // Savings
     const savingsEl = document.getElementById('result-savings');
     if (results.savings > 0) {
-      savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)} al ano`;
+      const savingsMonthly = results.savings / 12;
+      savingsEl.textContent = `Ahorras ${formatCurrency(results.savings)}/ano (${formatCurrency(savingsMonthly)}/mes)`;
       savingsEl.classList.add('positive');
       savingsEl.classList.remove('negative');
     } else {

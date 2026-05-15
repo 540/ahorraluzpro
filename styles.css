@@ -440,8 +440,61 @@ html, body {
 .result-company {
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   word-break: break-word;
+}
+
+/* Bill breakdown */
+.bill-breakdown {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.bill-row span:last-child {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bill-row-total {
+  border-bottom: none;
+  padding-top: 10px;
+  font-size: 15px;
+}
+
+.bill-row-total span {
+  font-weight: 700 !important;
+  color: var(--text) !important;
+}
+
+.bill-annual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.bill-annual-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.bill-monthly {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .result-amount {
