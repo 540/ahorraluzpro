@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Escanea el QR de tu factura de la luz y descubre si puedes ahorrar. Gratis, sin registro, sin compromiso.">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>AhorraLuz — Descubre si pagas de más en tu factura de la luz</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
+</head>
+<body>
+
+  <!-- PANTALLA 1: Landing -->
+  <section id="screen-landing" class="screen active">
+    <div class="landing-content">
+      <div class="logo-mark">AhorraLuz</div>
+      <h1>Descubre si pagas de m&aacute;s en tu factura de la luz</h1>
+      <p class="subtitle">Escanea el c&oacute;digo QR de tu factura y te decimos en segundos cu&aacute;nto puedes ahorrar.</p>
+      <button id="btn-scan" class="btn-primary">Escanear QR de mi factura</button>
+      <div class="trust-badges">
+        <span>Sin registro</span>
+        <span>100% gratis</span>
+        <span>Sin compromiso</span>
+      </div>
+      <details class="faq">
+        <summary>&iquest;D&oacute;nde est&aacute; el QR?</summary>
+        <p>Desde 2021, todas las facturas de luz en Espa&ntilde;a incluyen un c&oacute;digo QR obligatorio por la CNMC. Lo encontrar&aacute;s normalmente en la primera p&aacute;gina de tu factura, cerca de los datos del contrato.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- PANTALLA 2: Escaner QR -->
+  <section id="screen-scanner" class="screen">
+    <div class="scanner-header">
+      <button id="btn-back" class="btn-back" aria-label="Volver">&larr;</button>
+      <span>Apunta al QR de tu factura</span>
+    </div>
+    <div id="qr-reader"></div>
+    <p class="scanner-hint">Aseg&uacute;rate de que el QR est&eacute; bien iluminado y centrado</p>
+  </section>
+
+  <!-- PANTALLA 3: Carga progresiva -->
+  <section id="screen-loading" class="screen">
+    <div class="loading-content">
+      <h2>Analizando tu factura...</h2>
+      <div class="steps">
+        <div class="step" id="step-qr">
+          <span class="step-icon">&#9711;</span>
+          <span class="step-text">Leyendo c&oacute;digo QR</span>
+        </div>
+        <div class="step" id="step-data">
+          <span class="step-icon">&#9711;</span>
+          <span class="step-text">Extrayendo datos de consumo</span>
+        </div>
+        <div class="step" id="step-offers">
+          <span class="step-icon">&#9711;</span>
+          <span class="step-text">Buscando las mejores ofertas del mercado</span>
+        </div>
+        <div class="step" id="step-calc">
+          <span class="step-icon">&#9711;</span>
+          <span class="step-text">Calculando tu ahorro</span>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 4: Resultado -->
+  <section id="screen-result" class="screen">
+    <div class="result-content">
+      <div class="result-current">
+        <span class="result-label">Tu tarifa actual</span>
+        <span class="result-company" id="result-current-company">—</span>
+        <span class="result-amount" id="result-current-amount">—</span>
+        <span class="result-period">estimado/a&ntilde;o</span>
+      </div>
+
+      <div class="result-divider">
+        <span class="arrow-down"></span>
+      </div>
+
+      <div class="result-best">
+        <span class="result-badge">Mejor oferta</span>
+        <span class="result-company" id="result-best-company">—</span>
+        <span class="result-amount result-amount-best" id="result-best-amount">—</span>
+        <span class="result-period">estimado/a&ntilde;o</span>
+        <div class="result-savings" id="result-savings">—</div>
+      </div>
+
+      <div class="result-alternatives">
+        <h3>Tambi&eacute;n podr&iacute;as considerar</h3>
+        <div class="alt-offer" id="alt-1">
+          <span class="alt-name">—</span>
+          <span class="alt-amount">—</span>
+          <span class="alt-saving">—</span>
+        </div>
+        <div class="alt-offer" id="alt-2">
+          <span class="alt-name">—</span>
+          <span class="alt-amount">—</span>
+          <span class="alt-saving">—</span>
+        </div>
+      </div>
+
+      <div class="result-info">
+        <p>Cambiar de comercializadora es <strong>gratis</strong>, tarda unos <strong>5 d&iacute;as laborables</strong> y <strong>no hay corte de suministro</strong>. Tu nueva comercializadora gestiona todo el proceso.</p>
+      </div>
+
+      <button id="btn-restart" class="btn-secondary">Escanear otra factura</button>
+
+      <div class="result-disclaimer">
+        <p>Datos proporcionados por el comparador oficial de la CNMC. AhorraLuz no est&aacute; afiliado con ninguna comercializadora.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA Error -->
+  <section id="screen-error" class="screen">
+    <div class="error-content">
+      <div class="error-icon">!</div>
+      <h2 id="error-title">No hemos podido leer tu QR</h2>
+      <p id="error-message">Aseg&uacute;rate de que el c&oacute;digo QR de tu factura est&aacute; bien iluminado y no est&aacute; da&ntilde;ado.</p>
+      <button id="btn-retry" class="btn-primary">Intentar de nuevo</button>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
