@@ -84,13 +84,28 @@
       // Remove units like [kW] or [kWh]
       return val.replace(/\[.*?\]/g, '');
     };
-    const getFloat = (key, fallback) => parseFloat(get(key, fallback)) || fallback;
+    const getFloat = (key, fallback) => {
+      const val = parseFloat(get(key, String(fallback)));
+      return isNaN(val) ? fallback : val;
+    };
+    const getInt = (key, fallback) => {
+      const val = parseInt(get(key, String(fallback)));
+      return isNaN(val) ? fallback : val;
+    };
+
+    // Parse tc (tipo contrato): can be numeric (0,1,2) or string like "F0"
+    const tcRaw = get('tc', '0');
+    let tipoContrato = parseInt(tcRaw);
+    if (isNaN(tipoContrato)) {
+      // F0/F1 = fijo, I0 = indexado, etc.
+      tipoContrato = tcRaw.startsWith('I') ? 2 : 0;
+    }
 
     return {
       cups: get('cups', ''),
       codigoPostal: get('cp', ''),
-      bonoSocial: parseInt(get('bs', '0')),
-      peaje: parseInt(get('peaje', '18')),
+      bonoSocial: getInt('bs', 0),
+      peaje: getInt('peaje', 18),
       comercializadora: get('com', ''),
 
       // Potencia contratada
@@ -109,7 +124,7 @@
       consumoAnualP5: getFloat('caP5', 0),
       consumoAnualP6: getFloat('caP6', 0),
 
-      // Fechas consumo anual
+      // Fechas consumo anual (finA puede no estar presente)
       inicioAnual: get('iniA', ''),
       finAnual: get('finA', ''),
 
@@ -125,11 +140,17 @@
       inicioFact: get('iniF', ''),
       finFact: get('finF', ''),
 
+      // Fecha facturacion
+      fechaFacturacion: get('fFact', ''),
+
       // Importes
       importeTotal: getFloat('imp', 0),
       importeServicios: getFloat('impSA', 0),
       importeOtros: getFloat('impOtros', 0),
+      importeOtrosSinIE: getFloat('impOtrosSinIE', 0),
       excedentes: getFloat('exc', 0),
+      importePotencia: getFloat('impPot', 0),
+      importeEnergia: getFloat('impEner', 0),
 
       // Potencia maxima demandada
       pmaxP1: getFloat('pmaxP1', 0),
@@ -140,9 +161,23 @@
       pmaxP6: getFloat('pmaxP6', 0),
 
       // Contrato
-      tipoContrato: parseInt(get('tc', '0')),
+      tipoContrato: tipoContrato,
+      tipoContratoRaw: tcRaw,
       finPenalizacion: get('finPen', ''),
-      tipoFactura: parseInt(get('reg', '0')),
+      finContrato: get('finContrato', ''),
+      tipoFactura: getInt('reg', 0),
+
+      // Precios actuales (del contrato vigente)
+      precioPotP1: getFloat('prP1', 0),
+      precioPotP2: getFloat('prP2', 0),
+      precioEnerP1: getFloat('prE1', 0),
+      precioEnerP2: getFloat('prE2', 0),
+      precioEnerP3: getFloat('prE3', 0),
+
+      // Otros
+      verde: getInt('verde', 0),
+      ajuste: getFloat('ajuste', 0),
+      finBS: getFloat('finBS', 0),
     };
   }
 
@@ -152,11 +187,20 @@
       + qrData.consumoAnualP4 + qrData.consumoAnualP5 + qrData.consumoAnualP6;
 
     // Timestamps for date range (ms since epoch)
+    // Handle missing dates robustly — some QRs don't include finA
     const now = Date.now();
     const yearAgo = now - (365 * 24 * 60 * 60 * 1000);
-    const dateInicio = qrData.inicioAnual ? new Date(qrData.inicioAnual).getTime() : yearAgo;
-    const dateFin = qrData.finAnual ? new Date(qrData.finAnual).getTime() : now;
-    const fFact = qrData.finFact ? new Date(qrData.finFact).getTime() : now;
+
+    function safeTimestamp(dateStr, fallback) {
+      if (!dateStr) return fallback;
+      const t = new Date(dateStr).getTime();
+      return isNaN(t) ? fallback : t;
+    }
+
+    const dateInicio = safeTimestamp(qrData.inicioAnual, yearAgo);
+    // If finA missing, estimate as iniA + 1 year
+    const dateFin = safeTimestamp(qrData.finAnual, dateInicio + (365 * 24 * 60 * 60 * 1000));
+    const fFact = safeTimestamp(qrData.fechaFacturacion, safeTimestamp(qrData.finFact, now));
 
     return {
       tipoSuministro: 'E',
@@ -218,30 +262,30 @@
       tc: qrData.tipoContrato,
       bs: qrData.bonoSocial,
       impSA: qrData.importeServicios,
-      impOtros: qrData.importeOtros,
-      exc: qrData.excedentes,
-      reg: qrData.tipoFactura,
+      impOtros: qrData.importeOtros || 0,
+      exc: qrData.excedentes || 0,
+      reg: qrData.tipoFactura || 0,
       impOtrosConIE: 0,
-      impOtrosSinIE: 0,
-      pmaxP1: qrData.pmaxP1,
-      pmaxP2: qrData.pmaxP2,
+      impOtrosSinIE: qrData.importeOtrosSinIE || 0,
+      pmaxP1: qrData.pmaxP1 || 0,
+      pmaxP2: qrData.pmaxP2 || 0,
       fFact: fFact,
       dtoBS: 0,
-      finBS: 0,
-      ajuste: 0,
-      impPot: 0,
-      impEner: 0,
+      finBS: qrData.finBS || 0,
+      ajuste: qrData.ajuste || 0,
+      impPot: qrData.importePotencia || 0,
+      impEner: qrData.importeEnergia || 0,
       dto: 0,
-      prP1: 0,
-      prP2: 0,
-      prE1: 0,
-      prE2: 0,
-      prE3: 0,
+      prP1: qrData.precioPotP1 || 0,
+      prP2: qrData.precioPotP2 || 0,
+      prE1: qrData.precioEnerP1 || 0,
+      prE2: qrData.precioEnerP2 || 0,
+      prE3: qrData.precioEnerP3 || 0,
       cfP1flex: 0,
       cfP2flex: 0,
       cambio: 0,
       promo: 0,
-      verde: 0,
+      verde: qrData.verde || 0,
       rev: 0,
       trampeo: 0,
       cups: qrData.cups ? qrData.cups.slice(-4) : '0000',
@@ -474,7 +518,11 @@
 
     // Tipo contrato
     const tipos = { 0: 'Precio fijo', 1: 'Fijo no estandar', 2: 'Indexado/variable' };
-    document.getElementById('user-tipo-contrato').textContent = tipos[qrData.tipoContrato] || 'No disponible';
+    let tipoLabel = tipos[qrData.tipoContrato] || 'No disponible';
+    if (qrData.tipoContratoRaw && qrData.tipoContratoRaw !== String(qrData.tipoContrato)) {
+      tipoLabel += ` (${qrData.tipoContratoRaw})`;
+    }
+    document.getElementById('user-tipo-contrato').textContent = tipoLabel;
   }
 
   // --- Display ---
