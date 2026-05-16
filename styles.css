@@ -1565,6 +1565,300 @@ html, body {
 }
 
 /* ===================================================================
+   BANNERS CONTEXTUALES (modifiers) — base mobile-first
+   =================================================================== */
+.contract-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.contract-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+}
+
+.contract-banner[hidden] { display: none !important; }
+
+.contract-banner.banner-warn  { border-left-color: #fbbf24; background: linear-gradient(90deg, rgba(251,191,36,0.05), var(--bg-card) 40%); }
+.contract-banner.banner-tip   { border-left-color: var(--accent); background: linear-gradient(90deg, rgba(0,212,170,0.05), var(--bg-card) 40%); }
+.contract-banner.banner-good  { border-left-color: var(--savings); background: linear-gradient(90deg, rgba(52,211,153,0.05), var(--bg-card) 40%); }
+.contract-banner.banner-info  { border-left-color: #60a5fa; background: linear-gradient(90deg, rgba(96,165,250,0.05), var(--bg-card) 40%); }
+
+.banner-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.banner-warn .banner-icon  { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.banner-tip .banner-icon   { background: var(--accent-subtle); color: var(--accent); }
+.banner-good .banner-icon  { background: rgba(52,211,153,0.12); color: var(--savings); }
+.banner-info .banner-icon  { background: rgba(96,165,250,0.12); color: #60a5fa; }
+
+.banner-content { flex: 1; min-width: 0; }
+.banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.banner-content p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+.banner-content p:last-child { margin-bottom: 0; }
+.banner-content strong { color: var(--text); font-weight: 600; }
+.banner-content a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.banner-content a:hover { text-decoration: underline; }
+.banner-action {
+  font-size: 12px;
+  color: var(--text) !important;
+  font-weight: 500;
+  padding-top: 4px;
+}
+
+/* ===================================================================
+   TU NUEVO CONTRATO — comparativa visual
+   =================================================================== */
+.contract-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.contract-side {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.contract-side-nuevo {
+  border-color: var(--border-accent);
+  background: linear-gradient(180deg, var(--bg-card-alt), var(--bg-card));
+}
+
+.contract-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.contract-side-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.contract-side-nuevo .contract-side-tag { color: var(--accent); }
+
+.contract-side-company {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  line-height: 1.3;
+}
+
+.contract-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contract-chip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.contract-chip.chip-changed {
+  border-color: var(--border-accent);
+  background: rgba(0, 212, 170, 0.04);
+}
+
+.contract-chip.contract-chip-pago {
+  background: rgba(52, 211, 153, 0.05);
+  padding: 10px 12px;
+}
+
+.chip-key {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.chip-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.chip-badge {
+  display: none;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  grid-column: 2;
+  margin-top: 2px;
+}
+.chip-badge.chip-badge-good    { display: inline-flex; background: rgba(52,211,153,0.12); color: var(--savings); }
+.chip-badge.chip-badge-warn    { display: inline-flex; background: rgba(251,191,36,0.12); color: #fbbf24; }
+.chip-badge.chip-badge-neutral { display: inline-flex; background: var(--bg-card); color: var(--text-muted); }
+
+.contract-arrow {
+  align-self: center;
+  font-size: 18px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  padding: 4px 0;
+}
+
+/* Detalles avanzados plegables */
+.contract-details {
+  margin-top: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+
+.contract-details summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.contract-details summary::-webkit-details-marker { display: none; }
+.details-toggle-icon {
+  font-size: 10px;
+  color: var(--accent);
+  transition: transform var(--transition-base);
+}
+.contract-details[open] .details-toggle-icon {
+  transform: rotate(90deg);
+}
+.contract-details summary:hover { color: var(--text); }
+
+.contract-details-content {
+  padding: 0 16px 16px;
+}
+
+.contract-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.contract-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.contract-table-row:last-child { border-bottom: none; }
+
+.contract-table-head {
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.contract-table-key {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.contract-table-row > span:not(.contract-table-key) {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.contract-table-row-total {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 10px;
+  font-size: 13px;
+}
+.contract-table-row-total .contract-table-key,
+.contract-table-row-total > span {
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+.contract-details-footnote {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* Énfasis visual extra para big-savings */
+.savings-hero.savings-big {
+  background: linear-gradient(180deg, rgba(248,113,113,0.06) 0%, rgba(251,191,36,0.04) 100%);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+.savings-hero.savings-big::before {
+  background: radial-gradient(ellipse, rgba(248,113,113,0.08), transparent 70%);
+}
+
+/* Estado especial cuando el usuario ya está en lo mejor */
+#screen-result[data-case="rank-1"] .savings-hero,
+#screen-result[data-case="rank-top3"] .savings-hero {
+  background: linear-gradient(180deg, rgba(52,211,153,0.08) 0%, rgba(0,212,170,0.04) 100%);
+  border-color: var(--border-accent);
+}
+#screen-result[data-case="rank-1"] .savings-hero .savings-hero-amount,
+#screen-result[data-case="rank-top3"] .savings-hero .savings-hero-amount {
+  color: var(--savings);
+}
+
+/* ===================================================================
    RESPONSIVE — TABLET (768px+)
    =================================================================== */
 @media (min-width: 768px) {
@@ -2046,6 +2340,27 @@ html, body {
   .profile-bars    { gap: 12px; margin-bottom: 18px; }
   .bar-track       { height: 6px; }
   .profile-details { padding-top: 16px; gap: 16px; }
+
+  /* Tu nuevo contrato — comparativa en 2 columnas */
+  #section-contract { margin-bottom: 28px; }
+  .contract-comparison {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+  .contract-side { padding: 18px 20px; }
+  .contract-arrow {
+    align-self: center;
+    font-size: 24px;
+    padding: 0;
+  }
+  .contract-side-company { font-size: 15px; }
+  .chip-val { font-size: 13px; }
+
+  /* Banners: mantener stack vertical, son más legibles así */
+  .contract-banners { gap: 10px; margin-bottom: 24px; }
+  .contract-banner { padding: 12px 16px; }
 
   /* Footer: howto + restart en horizontal */
   .result-footer {

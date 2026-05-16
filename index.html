@@ -172,28 +172,220 @@
         </div>
       </div>
 
-      <!-- === Recomendaciones t&eacute;cnicas (datos del QR) === -->
+      <!-- === Banners contextuales (modifiers) — se muestran solo cuando aplican === -->
+      <div class="contract-banners" id="contract-banners">
+        <div class="contract-banner banner-warn" id="banner-permanencia-activa" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x26A0;</span>
+          <div class="banner-content">
+            <div class="banner-title">Tienes permanencia activa</div>
+            <p>Tu permanencia termina el <strong id="banner-pen-fecha">&mdash;</strong> (faltan <span id="banner-pen-dias">&mdash;</span> d&iacute;as). Cambiar ahora puede costarte ~<strong id="banner-pen-coste">&mdash;</strong> de penalizaci&oacute;n.</p>
+            <p class="banner-action" id="banner-pen-recomendacion">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-tip" id="banner-potencia-baja" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F4A1;</span>
+          <div class="banner-content">
+            <div class="banner-title">Acci&oacute;n prioritaria: baja tu potencia</div>
+            <p>Tu pico real de consumo fue <strong id="banner-pot-pico">&mdash;</strong>. Bajar de <strong id="banner-pot-actual">&mdash;</strong> a <strong id="banner-pot-sugerida">&mdash;</strong> te ahorrar&iacute;a <strong id="banner-pot-ahorro">&mdash;</strong> al a&ntilde;o sin cambiar de comercializadora.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-warn" id="banner-potencia-alta" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x26A1;</span>
+          <div class="banner-content">
+            <div class="banner-title">Potencia al l&iacute;mite</div>
+            <p>Tu pico real (<strong id="banner-pot-alta-pico">&mdash;</strong>) est&aacute; cerca de la potencia contratada. Considera subirla para evitar cortes.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-good" id="banner-misma-comp" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x2713;</span>
+          <div class="banner-content">
+            <div class="banner-title">No tienes que cambiar de compa&ntilde;&iacute;a</div>
+            <p>La mejor tarifa para tu perfil es de <strong id="banner-misma-comp-name">tu comercializadora actual</strong>. Solo pide el cambio de tarifa &mdash; sin trasvase, sin cortes, sin permanencia nueva.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-info" id="banner-bono-social" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F3DB;</span>
+          <div class="banner-content">
+            <div class="banner-title">Podr&iacute;as tener derecho al bono social</div>
+            <p>Tu perfil (consumo bajo + potencia reducida) podr&iacute;a ser elegible para el bono social, con descuentos del 25-40%. <a href="https://www.bonosocial.gob.es/" target="_blank" rel="noopener">M&aacute;s informaci&oacute;n &rarr;</a></p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-info" id="banner-autoconsumo" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x2600;</span>
+          <div class="banner-content">
+            <div class="banner-title">Tienes autoconsumo</div>
+            <p>Detectamos excedentes solares por valor de <strong id="banner-exc-valor">&mdash;</strong>. Algunas comercializadoras compensan mejor los excedentes &mdash; aseg&uacute;rate de elegir una compatible con tu instalaci&oacute;n.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-warn" id="banner-factura-antigua" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F4C5;</span>
+          <div class="banner-content">
+            <div class="banner-title">Factura antigua</div>
+            <p>Tu factura es de hace <strong id="banner-factura-meses">&mdash;</strong>. Los precios del mercado pueden haber cambiado desde entonces &mdash; esta comparativa es referencial.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-warn" id="banner-regularizacion" hidden>
+          <span class="banner-icon" aria-hidden="true">i</span>
+          <div class="banner-content">
+            <div class="banner-title">Factura de regularizaci&oacute;n</div>
+            <p>Esta factura corresponde a un periodo regularizado. Los datos pueden no representar tu consumo habitual.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-info" id="banner-indexado" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F4C8;</span>
+          <div class="banner-content">
+            <div class="banner-title">Tu contrato actual es indexado</div>
+            <p>Tu factura var&iacute;a con el precio del mercado mayorista. La comparativa con tarifas fijas es referencial.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-tip" id="banner-perfil-ev" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F50C;</span>
+          <div class="banner-content">
+            <div class="banner-title">Consumo nocturno alto detectado</div>
+            <p>Consumes <strong id="banner-valle-pct">&mdash;</strong> en horas valle. Si tienes veh&iacute;culo el&eacute;ctrico o calefacci&oacute;n el&eacute;ctrica nocturna, las tarifas espec&iacute;ficas para EV te benefician a&uacute;n m&aacute;s.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-info" id="banner-3-0-td" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x1F3E2;</span>
+          <div class="banner-content">
+            <div class="banner-title">Tarifa 3.0TD (peque&ntilde;o comercio)</div>
+            <p>Tu contrato supera los 15 kW &mdash; perfil profesional. Las comparativas est&aacute;n orientadas a residencial; ll&aacute;manos para un an&aacute;lisis espec&iacute;fico.</p>
+          </div>
+        </div>
+
+        <div class="contract-banner banner-tip" id="banner-similar-top3" hidden>
+          <span class="banner-icon" aria-hidden="true">&#x2696;</span>
+          <div class="banner-content">
+            <div class="banner-title">Las 3 mejores ofertas son casi id&eacute;nticas en precio</div>
+            <p>Elige por <strong>features</strong> en lugar de por &euro;: si valoras origen 100% renovable, ausencia de permanencia o atenci&oacute;n al cliente, esa es tu palanca de decisi&oacute;n.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- === Tu nuevo contrato — comparativa visual === -->
+      <div class="section-block" id="section-contract">
+        <div class="section-header">
+          <h3 id="contract-section-title">Tu nuevo contrato</h3>
+          <button class="help-toggle" data-help="help-contract" aria-label="Ayuda">?</button>
+        </div>
+        <div class="help-text" id="help-contract">
+          <p>Comparativa entre tu contrato actual y la mejor oferta. Solo cambia lo marcado en color &mdash; el resto se mantiene igual.</p>
+        </div>
+
+        <div class="contract-comparison">
+          <div class="contract-side contract-side-actual">
+            <div class="contract-side-header">
+              <span class="contract-side-tag">Contrato actual</span>
+              <span class="contract-side-company" id="contract-actual-company">&mdash;</span>
+            </div>
+            <div class="contract-chips">
+              <div class="contract-chip"><span class="chip-key">Tipo de mercado</span><span class="chip-val" id="chip-actual-tipo">&mdash;</span></div>
+              <div class="contract-chip"><span class="chip-key">Potencia contratada</span><span class="chip-val" id="chip-actual-potencia">&mdash;</span></div>
+              <div class="contract-chip"><span class="chip-key">Permanencia</span><span class="chip-val" id="chip-actual-permanencia">&mdash;</span></div>
+              <div class="contract-chip"><span class="chip-key">Origen energ&iacute;a</span><span class="chip-val" id="chip-actual-origen">&mdash;</span></div>
+              <div class="contract-chip contract-chip-pago"><span class="chip-key">Pago anual</span><span class="chip-val" id="chip-actual-pago">&mdash;</span></div>
+            </div>
+          </div>
+
+          <div class="contract-arrow" aria-hidden="true">&rarr;</div>
+
+          <div class="contract-side contract-side-nuevo">
+            <div class="contract-side-header">
+              <span class="contract-side-tag">Contrato propuesto</span>
+              <span class="contract-side-company" id="contract-nuevo-company">&mdash;</span>
+            </div>
+            <div class="contract-chips">
+              <div class="contract-chip" id="chip-nuevo-tipo-wrap"><span class="chip-key">Tipo de mercado</span><span class="chip-val" id="chip-nuevo-tipo">&mdash;</span><span class="chip-badge" id="chip-nuevo-tipo-badge"></span></div>
+              <div class="contract-chip" id="chip-nuevo-potencia-wrap"><span class="chip-key">Potencia contratada</span><span class="chip-val" id="chip-nuevo-potencia">&mdash;</span><span class="chip-badge" id="chip-nuevo-potencia-badge"></span></div>
+              <div class="contract-chip" id="chip-nuevo-permanencia-wrap"><span class="chip-key">Permanencia</span><span class="chip-val" id="chip-nuevo-permanencia">&mdash;</span><span class="chip-badge" id="chip-nuevo-permanencia-badge"></span></div>
+              <div class="contract-chip" id="chip-nuevo-origen-wrap"><span class="chip-key">Origen energ&iacute;a</span><span class="chip-val" id="chip-nuevo-origen">&mdash;</span><span class="chip-badge" id="chip-nuevo-origen-badge"></span></div>
+              <div class="contract-chip contract-chip-pago" id="chip-nuevo-pago-wrap"><span class="chip-key">Pago anual</span><span class="chip-val" id="chip-nuevo-pago">&mdash;</span><span class="chip-badge" id="chip-nuevo-pago-badge"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <details class="contract-details">
+          <summary>
+            <span class="details-toggle-icon" aria-hidden="true">&#9656;</span>
+            Ver detalles t&eacute;cnicos avanzados
+          </summary>
+          <div class="contract-details-content">
+            <div class="contract-table">
+              <div class="contract-table-row contract-table-head">
+                <span></span>
+                <span>Tu contrato actual</span>
+                <span>Contrato propuesto</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Tarifa de acceso</span>
+                <span id="adv-actual-tarifa">&mdash;</span>
+                <span id="adv-nuevo-tarifa">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Potencia P1 (punta)</span>
+                <span id="adv-actual-pot-p1">&mdash;</span>
+                <span id="adv-nuevo-pot-p1">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Potencia P2 (valle)</span>
+                <span id="adv-actual-pot-p2">&mdash;</span>
+                <span id="adv-nuevo-pot-p2">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Tipo de contrato</span>
+                <span id="adv-actual-tc">&mdash;</span>
+                <span id="adv-nuevo-tc">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Permanencia</span>
+                <span id="adv-actual-perm">&mdash;</span>
+                <span id="adv-nuevo-perm">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Origen energ&iacute;a</span>
+                <span id="adv-actual-origen">&mdash;</span>
+                <span id="adv-nuevo-origen">&mdash;</span>
+              </div>
+              <div class="contract-table-row contract-table-row-total">
+                <span class="contract-table-key">Coste anual estimado</span>
+                <span id="adv-actual-coste">&mdash;</span>
+                <span id="adv-nuevo-coste">&mdash;</span>
+              </div>
+              <div class="contract-table-row">
+                <span class="contract-table-key">Coste medio &euro;/kWh</span>
+                <span id="adv-actual-kwh">&mdash;</span>
+                <span id="adv-nuevo-kwh">&mdash;</span>
+              </div>
+            </div>
+            <p class="contract-details-footnote">El coste medio (&euro;/kWh) se calcula dividiendo el coste anual entre tu consumo total. Los precios desglosados por periodo (P1/P2/P3) no siempre los publica la comercializadora.</p>
+          </div>
+        </details>
+      </div>
+
+      <!-- === Recomendaciones t&eacute;cnicas (solo lo que NO se ve en el contrato) === -->
       <div class="section-block" id="section-recomendaciones">
         <div class="section-header">
-          <h3>Recomendaciones para ti</h3>
+          <h3>An&aacute;lisis adicional</h3>
           <button class="help-toggle" data-help="help-recomendaciones" aria-label="Ayuda">?</button>
         </div>
         <div class="help-text" id="help-recomendaciones">
-          <p>An&aacute;lisis t&eacute;cnico basado en los datos reales de tu factura. Te sugerimos optimizaciones m&aacute;s all&aacute; del simple cambio de comercializadora.</p>
+          <p>Diagn&oacute;stico sobre tu situaci&oacute;n actual que va m&aacute;s all&aacute; del cambio de tarifa. Recomendaciones para optimizar incluso si decides no cambiar.</p>
         </div>
         <div class="reco-grid">
-          <div class="reco-card" id="reco-potencia-card">
-            <div class="reco-icon" aria-hidden="true">&#9889;</div>
-            <div class="reco-body">
-              <div class="reco-label">Potencia contratada</div>
-              <div class="reco-value" id="reco-potencia-value">&mdash;</div>
-              <div class="reco-detail" id="reco-potencia-detail">&mdash;</div>
-            </div>
-          </div>
           <div class="reco-card" id="reco-tarifa-card">
             <div class="reco-icon" aria-hidden="true">&#x1F4CA;</div>
             <div class="reco-body">
-              <div class="reco-label">Tipo de tarifa &oacute;ptima</div>
+              <div class="reco-label">Tipo de tarifa &oacute;ptima para tu perfil</div>
               <div class="reco-value" id="reco-tarifa-value">&mdash;</div>
               <div class="reco-detail" id="reco-tarifa-detail">&mdash;</div>
             </div>
@@ -204,14 +396,6 @@
               <div class="reco-label">Tu coste real por kWh</div>
               <div class="reco-value" id="reco-coste-value">&mdash;</div>
               <div class="reco-detail" id="reco-coste-detail">&mdash;</div>
-            </div>
-          </div>
-          <div class="reco-card" id="reco-permanencia-card">
-            <div class="reco-icon" aria-hidden="true">&#x1F5D3;</div>
-            <div class="reco-body">
-              <div class="reco-label">Permanencia</div>
-              <div class="reco-value" id="reco-permanencia-value">&mdash;</div>
-              <div class="reco-detail" id="reco-permanencia-detail">&mdash;</div>
             </div>
           </div>
         </div>

@@ -630,6 +630,156 @@
     };
   }
 
+  // --- Classify scenario: primary case + modifiers ---
+  // Centraliza la lógica de qué tipo de usuario es, para que cada render
+  // pueda decidir tono, jerarquía visual y qué banners contextuales mostrar.
+  function classifyScenario(results, qrData) {
+    const out = { primaryCase: 'normal-savings', modifiers: {} };
+    const m = out.modifiers;
+
+    // === primaryCase ===
+    if (!results || !results.best) {
+      out.primaryCase = 'no-offers';
+      return out;
+    }
+    if (results.alreadyBest && results.currentCompanyRank === 1) {
+      out.primaryCase = 'rank-1';
+    } else if (results.alreadyBest) {
+      out.primaryCase = 'rank-top3';
+    } else if (results.savings <= 0) {
+      out.primaryCase = 'already-cheap';
+    } else {
+      const pct = results.savings / Math.max(results.current.amount, 1);
+      if (pct >= 0.15) out.primaryCase = 'big-savings';
+      else if (pct >= 0.05) out.primaryCase = 'normal-savings';
+      else out.primaryCase = 'small-savings';
+    }
+
+    // === modifiers ===
+    // sameCompanyBest — la mejor oferta es de su comercializadora actual
+    if (results.best && results.current) {
+      const a = (results.current.company || '').toUpperCase().split(' ')[0];
+      const b = (results.best.company || '').toUpperCase().split(' ')[0];
+      m.sameCompanyBest = a && b && (a.includes(b) || b.includes(a));
+    }
+
+    // userHasPermanencia — usuario tiene permanencia activa
+    if (qrData && qrData.finPenalizacion) {
+      const finPen = new Date(qrData.finPenalizacion);
+      const now = new Date();
+      if (!isNaN(finPen) && finPen > now) {
+        const dias = Math.ceil((finPen - now) / 86400000);
+        // Penalización estándar: 5% del importe del consumo pendiente
+        const mesesRestantes = dias / 30;
+        const consumoAnual = qrData.importeTotal && qrData.consumoFactP1
+          ? (results.current.amount || 0)
+          : (results.current.amount || 0);
+        const penalizacionEstim = (consumoAnual / 12) * mesesRestantes * 0.05;
+        m.userHasPermanencia = {
+          dias: dias,
+          fecha: finPen,
+          penalizacionEstim: penalizacionEstim,
+          compensaCambiar: results.savings > 0
+            ? (results.savings / 12) * mesesRestantes > penalizacionEstim
+            : false
+        };
+      }
+    }
+
+    // bestHasPermanencia — la oferta nueva pide permanencia
+    if (results.best && results.best.hasPenalty) {
+      m.bestHasPermanencia = true;
+    }
+
+    // bonoSocialEligible — proxy: consumo bajo + potencia reducida + no tiene ya bono
+    if (qrData) {
+      const totalConsumo = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0)
+        + (qrData.consumoAnualP3 || 0);
+      const tienePotenciaBaja = qrData.potenciaP1 > 0 && qrData.potenciaP1 <= 10;
+      const tieneConsumoBajo = totalConsumo > 0 && totalConsumo < 3000;
+      if (tienePotenciaBaja && tieneConsumoBajo && !qrData.bonoSocial) {
+        m.bonoSocialEligible = true;
+      }
+      if (qrData.bonoSocial && qrData.bonoSocial > 0) {
+        m.bonoSocialActivo = true;
+      }
+    }
+
+    // hasAutoconsumo — tiene excedentes solares
+    if (qrData && qrData.excedentes && qrData.excedentes > 0) {
+      m.hasAutoconsumo = qrData.excedentes;
+    }
+
+    // Potencia dimensionamiento
+    if (qrData) {
+      const pmax = Math.max(
+        qrData.pmaxP1 || 0, qrData.pmaxP2 || 0, qrData.pmaxP3 || 0,
+        qrData.pmaxP4 || 0, qrData.pmaxP5 || 0, qrData.pmaxP6 || 0
+      );
+      const pContratada = qrData.potenciaP1 || 0;
+      if (pmax > 0 && pContratada > 0) {
+        const ratio = pmax / pContratada;
+        if (ratio < 0.6) {
+          const sugerida = Math.max(2.0, Math.ceil(pmax * 1.15 * 10) / 10);
+          m.potOverdimensioned = {
+            pmax: pmax,
+            actual: pContratada,
+            sugerida: sugerida,
+            ahorroEstim: Math.round((pContratada - sugerida) * 38)
+          };
+        } else if (ratio > 0.9) {
+          m.potUnderdimensioned = { pmax: pmax, actual: pContratada };
+        }
+      }
+    }
+
+    // is30TD — pequeño comercio (peaje 19)
+    if (qrData && qrData.peaje === 19) {
+      m.is30TD = true;
+    }
+
+    // contratoIndexado — el actual es indexado
+    if (qrData && qrData.tipoContrato === 2) {
+      m.contratoIndexado = true;
+    }
+
+    // similarTop3 — top 3 ofertas con <2% de diferencia entre ellas
+    if (results.best && results.alternatives && results.alternatives.length >= 2) {
+      const top1 = results.best.amount;
+      const top3 = results.alternatives[1].amount;
+      if (top1 > 0 && (top3 - top1) / top1 < 0.02) {
+        m.similarTop3 = true;
+      }
+    }
+
+    // oldInvoice — factura de hace >6 meses
+    if (qrData && qrData.fechaFacturacion) {
+      const fFact = new Date(qrData.fechaFacturacion);
+      if (!isNaN(fFact)) {
+        const mesesAtras = (Date.now() - fFact.getTime()) / (1000 * 60 * 60 * 24 * 30);
+        if (mesesAtras > 6) {
+          m.oldInvoice = Math.round(mesesAtras);
+        }
+      }
+    }
+
+    // isRegularizacion — reg=1
+    if (qrData && qrData.tipoFactura === 1) {
+      m.isRegularizacion = true;
+    }
+
+    // veryHighValle — >55% del consumo en P3
+    if (qrData) {
+      const total = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0)
+        + (qrData.consumoAnualP3 || 0);
+      if (total > 0 && (qrData.consumoAnualP3 / total) > 0.55) {
+        m.veryHighValle = Math.round((qrData.consumoAnualP3 / total) * 100);
+      }
+    }
+
+    return out;
+  }
+
   // --- Display consumption data from QR ---
   function displayConsumption(qrData, companyName) {
     const p1 = qrData.consumoAnualP1;
@@ -695,45 +845,11 @@
     }
   }
 
-  // --- Recomendaciones técnicas basadas en datos del QR ---
+  // --- Recomendaciones técnicas (solo lo que NO se ve en "Tu nuevo contrato") ---
+  // Se quedaron: tarifa óptima (recomendación, no se ve en chips) y €/kWh real (diagnóstico).
+  // Potencia y permanencia se gestionan en chips + banners del contrato.
   function displayRecomendaciones(qrData) {
-    // 1) Potencia: comparar pmax demandada vs potencia contratada
-    const pContratada = qrData.potenciaP1 || 0;
-    const pmax = Math.max(
-      qrData.pmaxP1 || 0,
-      qrData.pmaxP2 || 0,
-      qrData.pmaxP3 || 0,
-      qrData.pmaxP4 || 0,
-      qrData.pmaxP5 || 0,
-      qrData.pmaxP6 || 0
-    );
-    const potValEl = document.getElementById('reco-potencia-value');
-    const potDetEl = document.getElementById('reco-potencia-detail');
-    if (pContratada > 0 && pmax > 0) {
-      const sugerida = Math.max(2.0, Math.ceil((pmax * 1.1) * 10) / 10);
-      const ratio = pmax / pContratada;
-      if (sugerida < pContratada - 0.2) {
-        // Estimación grosera: ~38€/kW/año en término de potencia
-        const ahorroEstim = Math.round((pContratada - sugerida) * 38);
-        potValEl.textContent = `${pContratada.toFixed(2)} kW → ${sugerida.toFixed(1)} kW`;
-        potDetEl.innerHTML = `Tu pico real fue <strong>${pmax.toFixed(2)} kW</strong>. Bajar la contratada podrías ahorrar <strong>~${ahorroEstim} €/año</strong>.`;
-        document.getElementById('reco-potencia-card').classList.add('reco-card-alert');
-      } else if (ratio > 0.95) {
-        potValEl.textContent = `${pContratada.toFixed(2)} kW — al límite`;
-        potDetEl.innerHTML = `Tu pico (${pmax.toFixed(2)} kW) está cerca del límite. Considera <strong>subir</strong> potencia para evitar cortes.`;
-        document.getElementById('reco-potencia-card').classList.add('reco-card-alert');
-      } else {
-        potValEl.textContent = `${pContratada.toFixed(2)} kW`;
-        potDetEl.innerHTML = `Pico real: ${pmax.toFixed(2)} kW. Tu potencia contratada está bien dimensionada.`;
-      }
-    } else if (pContratada > 0) {
-      potValEl.textContent = `${pContratada.toFixed(2)} kW`;
-      potDetEl.textContent = 'Sin datos de potencia máxima en el QR para sugerir ajuste.';
-    } else {
-      document.getElementById('reco-potencia-card').style.display = 'none';
-    }
-
-    // 2) Tipo de tarifa según distribución del consumo
+    // Tipo de tarifa óptima según distribución horaria del consumo
     const cP1 = qrData.consumoAnualP1 || 0;
     const cP2 = qrData.consumoAnualP2 || 0;
     const cP3 = qrData.consumoAnualP3 || 0;
@@ -758,7 +874,7 @@
       document.getElementById('reco-tarifa-card').style.display = 'none';
     }
 
-    // 3) Coste real €/kWh vs media nacional (~0.20 €/kWh PVPC promedio reciente)
+    // Coste real €/kWh vs media nacional (~0.20 €/kWh PVPC promedio reciente)
     const imp = qrData.importeTotal || 0;
     const consumoFact = (qrData.consumoFactP1 || 0) + (qrData.consumoFactP2 || 0) + (qrData.consumoFactP3 || 0);
     const costValEl = document.getElementById('reco-coste-value');
@@ -780,29 +896,235 @@
     } else {
       document.getElementById('reco-coste-card').style.display = 'none';
     }
+  }
 
-    // 4) Permanencia
-    const permValEl = document.getElementById('reco-permanencia-value');
-    const permDetEl = document.getElementById('reco-permanencia-detail');
+  // --- Render "Tu nuevo contrato": chips comparativa + tabla avanzada ---
+  function renderContractComparison(results, qrData, scenario) {
+    if (!results || !results.best) {
+      document.getElementById('section-contract').style.display = 'none';
+      return;
+    }
+    document.getElementById('section-contract').style.display = '';
+
+    // Título adaptado según escenario
+    const titleEl = document.getElementById('contract-section-title');
+    if (scenario.primaryCase === 'rank-1' || scenario.primaryCase === 'rank-top3') {
+      titleEl.textContent = 'Tu contrato actual vs la competencia';
+    } else {
+      titleEl.textContent = 'Tu nuevo contrato propuesto';
+    }
+
+    // Tipo de mercado actual
+    const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
+    const tipoActualLabel = qrData.tipoContrato === 2 ? 'Indexado'
+      : qrData.tipoContrato === 1 ? 'Fijo no estándar'
+      : 'PVPC / Fijo';
+
+    // Comercializadora actual
+    document.getElementById('contract-actual-company').textContent = results.current.company;
+    document.getElementById('chip-actual-tipo').textContent = tipoActualLabel;
+    const potActualStr = qrData.potenciaP1
+      ? `${qrData.potenciaP1.toFixed(2)} kW`
+      : '—';
+    document.getElementById('chip-actual-potencia').textContent = potActualStr;
+    // Permanencia actual
+    let permActualStr = 'Sin permanencia';
     if (qrData.finPenalizacion) {
       const finPen = new Date(qrData.finPenalizacion);
-      const now = new Date();
-      if (!isNaN(finPen) && finPen > now) {
-        const dias = Math.ceil((finPen - now) / (1000 * 60 * 60 * 24));
-        const fecha = finPen.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-        permValEl.textContent = `${dias} días restantes`;
-        permDetEl.innerHTML = `Acaba el <strong>${fecha}</strong>. Cambiar antes puede tener penalización.`;
-        document.getElementById('reco-permanencia-card').classList.add('reco-card-alert');
+      if (!isNaN(finPen) && finPen > new Date()) {
+        permActualStr = `Activa hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
+      }
+    }
+    document.getElementById('chip-actual-permanencia').textContent = permActualStr;
+    document.getElementById('chip-actual-origen').textContent = 'Mix nacional';
+    document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
+
+    // === Propuesta ===
+    const best = results.best;
+    document.getElementById('contract-nuevo-company').textContent = best.company;
+    // Tipo: la API no especifica claramente, asumimos "Precio fijo" para ofertas de mercado libre
+    document.getElementById('chip-nuevo-tipo').textContent = 'Precio fijo';
+    // Potencia: por defecto mantiene la actual; si hay recomendación de bajar la mostramos
+    const pot = scenario.modifiers.potOverdimensioned;
+    if (pot) {
+      document.getElementById('chip-nuevo-potencia').textContent = `${pot.sugerida.toFixed(1)} kW (recomendado)`;
+      setBadge('chip-nuevo-potencia-badge', 'good', `-${(pot.actual - pot.sugerida).toFixed(2)} kW`);
+    } else {
+      document.getElementById('chip-nuevo-potencia').textContent = potActualStr;
+      setBadge('chip-nuevo-potencia-badge', 'neutral', 'Sin cambios');
+    }
+    // Permanencia nueva
+    const permNueva = best.hasPenalty ? '12 meses' : 'Sin permanencia';
+    document.getElementById('chip-nuevo-permanencia').textContent = permNueva;
+    if (best.hasPenalty && permActualStr === 'Sin permanencia') {
+      setBadge('chip-nuevo-permanencia-badge', 'warn', 'Atención');
+    } else if (!best.hasPenalty && permActualStr !== 'Sin permanencia') {
+      setBadge('chip-nuevo-permanencia-badge', 'good', 'Más libertad');
+    } else {
+      setBadge('chip-nuevo-permanencia-badge', 'neutral', 'Igual');
+    }
+    // Origen
+    const origenNuevo = best.isGreen ? '100% renovable' : 'Mix nacional';
+    document.getElementById('chip-nuevo-origen').textContent = origenNuevo;
+    if (best.isGreen) setBadge('chip-nuevo-origen-badge', 'good', 'Mejora');
+    else setBadge('chip-nuevo-origen-badge', 'neutral', 'Igual');
+    // Pago
+    document.getElementById('chip-nuevo-pago').textContent = `${formatCurrency(best.amount)}/año`;
+    const diff = results.current.amount - best.amount;
+    if (diff > 0) setBadge('chip-nuevo-pago-badge', 'good', `-${formatCurrency(diff)}/año`);
+    else if (diff < 0) setBadge('chip-nuevo-pago-badge', 'warn', `+${formatCurrency(-diff)}/año`);
+    else setBadge('chip-nuevo-pago-badge', 'neutral', 'Igual');
+
+    // Marcar chips que cambian con clase "chip-changed"
+    markChangedChips({
+      tipo: tipoActualLabel !== 'Precio fijo',
+      potencia: !!pot,
+      permanencia: permActualStr !== permNueva,
+      origen: !best.isGreen ? false : true,  // si la nueva es verde y la actual no
+      pago: diff !== 0
+    });
+
+    // === Tabla avanzada ===
+    const tarifaAcceso = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
+    document.getElementById('adv-actual-tarifa').textContent = tarifaAcceso;
+    document.getElementById('adv-nuevo-tarifa').textContent = tarifaAcceso;
+    document.getElementById('adv-actual-pot-p1').textContent = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
+    document.getElementById('adv-actual-pot-p2').textContent = qrData.potenciaP2 ? `${qrData.potenciaP2.toFixed(2)} kW` : '—';
+    const potP1Nueva = pot ? pot.sugerida : qrData.potenciaP1;
+    const potP2Nueva = pot ? pot.sugerida : qrData.potenciaP2;
+    document.getElementById('adv-nuevo-pot-p1').textContent = potP1Nueva ? `${potP1Nueva.toFixed(2)} kW` : '—';
+    document.getElementById('adv-nuevo-pot-p2').textContent = potP2Nueva ? `${potP2Nueva.toFixed(2)} kW` : '—';
+    document.getElementById('adv-actual-tc').textContent = tiposContrato[qrData.tipoContrato] || '—';
+    document.getElementById('adv-nuevo-tc').textContent = 'Precio fijo (mercado libre)';
+    document.getElementById('adv-actual-perm').textContent = permActualStr;
+    document.getElementById('adv-nuevo-perm').textContent = best.hasPenalty ? '12 meses (estándar)' : 'Sin permanencia';
+    document.getElementById('adv-actual-origen').textContent = 'Mix nacional';
+    document.getElementById('adv-nuevo-origen').textContent = best.isGreen ? '100% renovable certificado' : 'Mix nacional';
+    document.getElementById('adv-actual-coste').textContent = `${formatCurrency(results.current.amount)}/año`;
+    document.getElementById('adv-nuevo-coste').textContent = `${formatCurrency(best.amount)}/año`;
+    // Coste medio €/kWh
+    const consumoTotal = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0) + (qrData.consumoAnualP3 || 0);
+    if (consumoTotal > 0) {
+      document.getElementById('adv-actual-kwh').textContent = `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`;
+      document.getElementById('adv-nuevo-kwh').textContent = `${(best.amount / consumoTotal).toFixed(3)} €/kWh`;
+    }
+  }
+
+  function setBadge(elId, kind, text) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'chip-badge chip-badge-' + kind;
+  }
+
+  function markChangedChips(flags) {
+    const map = {
+      tipo: 'chip-nuevo-tipo-wrap',
+      potencia: 'chip-nuevo-potencia-wrap',
+      permanencia: 'chip-nuevo-permanencia-wrap',
+      origen: 'chip-nuevo-origen-wrap',
+      pago: 'chip-nuevo-pago-wrap',
+    };
+    Object.entries(flags).forEach(([k, changed]) => {
+      const el = document.getElementById(map[k]);
+      if (el) el.classList.toggle('chip-changed', !!changed);
+    });
+  }
+
+  // --- Render banners contextuales según modifiers del escenario ---
+  function renderModifierBanners(scenario, qrData, results) {
+    const m = scenario.modifiers || {};
+    // Helper para mostrar/ocultar
+    const show = (id, visible) => {
+      const el = document.getElementById(id);
+      if (el) el.hidden = !visible;
+    };
+
+    // Permanencia activa
+    if (m.userHasPermanencia) {
+      show('banner-permanencia-activa', true);
+      const p = m.userHasPermanencia;
+      document.getElementById('banner-pen-fecha').textContent = p.fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('banner-pen-dias').textContent = p.dias;
+      document.getElementById('banner-pen-coste').textContent = formatCurrency(p.penalizacionEstim);
+      const reco = document.getElementById('banner-pen-recomendacion');
+      if (p.compensaCambiar) {
+        reco.textContent = 'Aun pagando la penalización, el ahorro acumulado hasta esa fecha supera el coste — te compensa cambiar ya.';
+      } else if (results && results.savings > 0) {
+        reco.textContent = 'Te recomendamos esperar a que termine tu permanencia para cambiar sin coste adicional.';
       } else {
-        permValEl.textContent = 'Sin permanencia';
-        permDetEl.textContent = 'Puedes cambiar de comercializadora libremente.';
-        document.getElementById('reco-permanencia-card').classList.add('reco-card-good');
+        reco.textContent = '';
       }
     } else {
-      permValEl.textContent = 'Sin permanencia';
-      permDetEl.textContent = 'No tienes permanencia activa. Puedes cambiar libremente.';
-      document.getElementById('reco-permanencia-card').classList.add('reco-card-good');
+      show('banner-permanencia-activa', false);
     }
+
+    // Potencia sobredimensionada (acción prioritaria)
+    if (m.potOverdimensioned) {
+      const p = m.potOverdimensioned;
+      show('banner-potencia-baja', true);
+      document.getElementById('banner-pot-pico').textContent = `${p.pmax.toFixed(2)} kW`;
+      document.getElementById('banner-pot-actual').textContent = `${p.actual.toFixed(2)} kW`;
+      document.getElementById('banner-pot-sugerida').textContent = `${p.sugerida.toFixed(1)} kW`;
+      document.getElementById('banner-pot-ahorro').textContent = `~${formatCurrency(p.ahorroEstim)}`;
+    } else {
+      show('banner-potencia-baja', false);
+    }
+
+    // Potencia al límite
+    if (m.potUnderdimensioned) {
+      show('banner-potencia-alta', true);
+      document.getElementById('banner-pot-alta-pico').textContent = `${m.potUnderdimensioned.pmax.toFixed(2)} kW`;
+    } else {
+      show('banner-potencia-alta', false);
+    }
+
+    // Misma comercializadora
+    if (m.sameCompanyBest && results && results.best && results.savings > 0) {
+      show('banner-misma-comp', true);
+      document.getElementById('banner-misma-comp-name').textContent = results.best.company;
+    } else {
+      show('banner-misma-comp', false);
+    }
+
+    // Bono social
+    show('banner-bono-social', !!m.bonoSocialEligible);
+
+    // Autoconsumo
+    if (m.hasAutoconsumo) {
+      show('banner-autoconsumo', true);
+      document.getElementById('banner-exc-valor').textContent = formatCurrency(m.hasAutoconsumo);
+    } else {
+      show('banner-autoconsumo', false);
+    }
+
+    // Factura antigua
+    if (m.oldInvoice) {
+      show('banner-factura-antigua', true);
+      document.getElementById('banner-factura-meses').textContent = `${m.oldInvoice} meses`;
+    } else {
+      show('banner-factura-antigua', false);
+    }
+
+    // Regularización
+    show('banner-regularizacion', !!m.isRegularizacion);
+
+    // Contrato indexado
+    show('banner-indexado', !!m.contratoIndexado);
+
+    // Perfil EV / mucho valle
+    if (m.veryHighValle) {
+      show('banner-perfil-ev', true);
+      document.getElementById('banner-valle-pct').textContent = `${m.veryHighValle}%`;
+    } else {
+      show('banner-perfil-ev', false);
+    }
+
+    // 3.0TD
+    show('banner-3-0-td', !!m.is30TD);
+
+    // Top 3 similares
+    show('banner-similar-top3', !!m.similarTop3);
   }
 
   // --- Build feature tags HTML ---
@@ -817,12 +1139,134 @@
     return html;
   }
 
+  // --- Renderers por caso primario ---
+  // Cada uno ajusta: hero, badge mejor oferta, header de alternativas, insight, visibilidad de howto.
+
+  function renderCaseAlreadyBest(results, qrData, scenario) {
+    const isRank1 = scenario.primaryCase === 'rank-1';
+    const heroLabel = document.getElementById('savings-hero-label');
+    const heroAmount = document.getElementById('savings-hero-amount');
+    const heroSub = document.getElementById('savings-hero-sub');
+    const savingsHero = document.getElementById('savings-hero');
+
+    savingsHero.classList.add('no-savings');
+    heroLabel.textContent = isRank1 ? 'Enhorabuena' : 'Tu tarifa actual';
+    heroAmount.textContent = isRank1 ? '✓ Tienes la mejor oferta' : 'Estás entre las mejores tarifas';
+    heroSub.textContent = `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas analizadas`;
+
+    document.getElementById('best-header').textContent = isRank1
+      ? 'Tu oferta actual es la #1'
+      : `Tu oferta actual: puesto #${results.currentCompanyRank}`;
+    const bestBadge = document.getElementById('result-badge');
+    bestBadge.textContent = `#${results.currentCompanyRank} de ${results.totalOffers}`;
+    bestBadge.classList.add('badge-good');
+
+    document.getElementById('alt-header').textContent = 'La competencia (por transparencia)';
+
+    document.getElementById('insight-text').innerHTML = isRank1
+      ? `<strong>${results.current.company} tiene la mejor tarifa del mercado</strong> para tu perfil entre las ${results.totalOffers} ofertas disponibles. No necesitas cambiar nada. Te mostramos la competencia abajo solo por transparencia &mdash; comprueba que estamos siendo honestos contigo.`
+      : `${results.current.company} está en el <strong>puesto #${results.currentCompanyRank} de ${results.totalOffers}</strong>. La diferencia con la #1 es marginal (probablemente <2%), así que el esfuerzo de cambiar no compensa. Repasa la competencia abajo si tienes curiosidad.`;
+
+    document.getElementById('result-savings').style.display = 'none';
+    document.getElementById('section-howto').style.display = 'none';
+  }
+
+  function renderCaseBigSavings(results, qrData, scenario) {
+    const heroLabel = document.getElementById('savings-hero-label');
+    const heroAmount = document.getElementById('savings-hero-amount');
+    const heroSub = document.getElementById('savings-hero-sub');
+    const savingsHero = document.getElementById('savings-hero');
+    savingsHero.classList.remove('no-savings');
+    savingsHero.classList.add('savings-big');
+
+    const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
+    heroLabel.textContent = 'Ahorro disponible';
+    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
+    heroSub.innerHTML = `Estás pagando un <strong>${pct}% de más</strong> &mdash; cambiando a ${results.best.company}`;
+
+    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
+    const bestBadge = document.getElementById('result-badge');
+    bestBadge.textContent = `#1 de ${results.totalOffers}`;
+    bestBadge.classList.remove('badge-good');
+    document.getElementById('alt-header').textContent = 'También podrías considerar';
+
+    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
+    document.getElementById('result-savings').style.display = 'none';
+    document.getElementById('section-howto').style.display = '';
+  }
+
+  function renderCaseNormalSavings(results, qrData, scenario) {
+    const heroLabel = document.getElementById('savings-hero-label');
+    const heroAmount = document.getElementById('savings-hero-amount');
+    const heroSub = document.getElementById('savings-hero-sub');
+    const savingsHero = document.getElementById('savings-hero');
+    savingsHero.classList.remove('no-savings', 'savings-big');
+
+    heroLabel.textContent = 'Tu ahorro potencial';
+    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
+    heroSub.textContent = `${formatCurrency(results.savings / 12)}/mes — cambiando a ${results.best.company}`;
+
+    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
+    const bestBadge = document.getElementById('result-badge');
+    bestBadge.textContent = `#1 de ${results.totalOffers}`;
+    bestBadge.classList.remove('badge-good');
+    document.getElementById('alt-header').textContent = 'También podrías considerar';
+
+    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
+    document.getElementById('result-savings').style.display = 'none';
+    document.getElementById('section-howto').style.display = '';
+  }
+
+  function renderCaseSmallSavings(results, qrData, scenario) {
+    const heroLabel = document.getElementById('savings-hero-label');
+    const heroAmount = document.getElementById('savings-hero-amount');
+    const heroSub = document.getElementById('savings-hero-sub');
+    const savingsHero = document.getElementById('savings-hero');
+    savingsHero.classList.remove('no-savings', 'savings-big');
+
+    heroLabel.textContent = 'Ahorro marginal disponible';
+    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
+    heroSub.innerHTML = `Tu tarifa actual es razonable. Cambiar te da un ahorro pequeño &mdash; valora si el esfuerzo compensa.`;
+
+    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
+    const bestBadge = document.getElementById('result-badge');
+    bestBadge.textContent = `#1 de ${results.totalOffers}`;
+    bestBadge.classList.remove('badge-good');
+    document.getElementById('alt-header').textContent = 'También podrías considerar';
+
+    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
+    document.getElementById('result-savings').style.display = 'none';
+    document.getElementById('section-howto').style.display = '';
+  }
+
+  function renderCaseAlreadyCheap(results, qrData, scenario) {
+    const savingsHero = document.getElementById('savings-hero');
+    savingsHero.classList.add('no-savings');
+    document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
+    document.getElementById('savings-hero-amount').textContent = 'Ya es muy competitiva';
+    document.getElementById('savings-hero-sub').textContent = `No hemos encontrado nada mejor entre ${results.totalOffers} ofertas`;
+
+    document.getElementById('best-header').textContent = 'La oferta más barata del mercado';
+    const bestBadge = document.getElementById('result-badge');
+    bestBadge.textContent = `#1 de ${results.totalOffers}`;
+    document.getElementById('alt-header').textContent = 'Otras ofertas del mercado';
+
+    document.getElementById('insight-text').innerHTML = `Tu tarifa actual cuesta <strong>${formatCurrency(results.current.amount)}/año</strong>, igual o más barata que cualquier oferta de mercado libre. No hay nada que rascar cambiando de comercializadora &mdash; revisa el bloque de análisis adicional por si puedes optimizar otros aspectos.`;
+    document.getElementById('result-savings').style.display = 'none';
+    document.getElementById('section-howto').style.display = 'none';
+  }
+
   // --- Display ---
   function displayResults(results, qrData) {
     // Comparison cards
     document.getElementById('comp-current-company').textContent = results.current.company;
     document.getElementById('result-current-amount').textContent = formatCurrency(results.current.amount);
     document.getElementById('result-current-monthly').textContent = `${formatCurrency(results.current.amount / 12)}/mes`;
+
+    // Clasificar escenario para decidir tono, jerarqu\u00eda y banners
+    const scenario = classifyScenario(results, qrData);
+    const screenEl = document.getElementById('screen-result');
+    screenEl.dataset.case = scenario.primaryCase;
 
     if (!results.best) {
       document.getElementById('savings-hero').style.display = 'none';
@@ -843,6 +1287,7 @@
     const savingsEl = document.getElementById('result-savings');
     const altHeader = document.getElementById('alt-header');
     const savingsHero = document.getElementById('savings-hero');
+    const insightEl = document.getElementById('insight-text');
 
     // Detail card
     document.getElementById('result-best-company-detail').textContent = results.best.company;
@@ -855,64 +1300,27 @@
     }
 
     // Feature tags for best offer
-    const bestFeaturesEl = document.getElementById('result-best-features');
-    bestFeaturesEl.innerHTML = buildFeatureTags(results.best);
+    document.getElementById('result-best-features').innerHTML = buildFeatureTags(results.best);
 
-    // Personalized insight + adapt sections based on whether user has top tariff
-    const insightEl = document.getElementById('insight-text');
-
-    if (results.alreadyBest) {
-      bestHeader.textContent = 'La mejor del mercado';
-      bestBadge.textContent = '#' + results.currentCompanyRank + ' de ' + results.totalOffers + ' ofertas';
-      bestBadge.classList.add('badge-good');
-      altHeader.textContent = 'La competencia';
-
-      insightEl.innerHTML = 'Buenas noticias: <strong>ya tienes una de las mejores tarifas del mercado</strong> para tu perfil de consumo. ' +
-        results.current.company + ' est\u00e1 en el puesto <strong>#' + results.currentCompanyRank + ' de ' + results.totalOffers + '</strong> ofertas disponibles. ' +
-        'Te mostramos la competencia por si quieres comparar.';
-
-      savingsEl.textContent = 'Ya est\u00e1s entre las mejores tarifas';
-      savingsEl.classList.add('negative');
-      savingsEl.classList.remove('positive');
-
-      // Savings hero: show "already good" state
-      savingsHero.classList.add('no-savings');
-      document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
-      document.getElementById('savings-hero-amount').textContent = 'Ya est\u00e1s entre las mejores';
-      document.getElementById('savings-hero-sub').textContent = `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas`;
-
-      document.getElementById('section-howto').style.display = 'none';
-    } else {
-      bestHeader.textContent = 'Mejor oferta del mercado';
-      bestBadge.textContent = '#1 de ' + results.totalOffers + ' ofertas';
-      bestBadge.classList.remove('badge-good');
-      altHeader.textContent = 'Tambi\u00e9n podr\u00edas considerar';
-
-      // Build personalized explanation
-      const insight = buildInsight(results, qrData);
-      insightEl.innerHTML = insight;
-
-      // === SAVINGS HERO ===
-      savingsHero.classList.remove('no-savings');
-      if (results.savings > 0) {
-        const savingsMonthly = results.savings / 12;
-        document.getElementById('savings-hero-label').textContent = 'Tu ahorro potencial';
-        document.getElementById('savings-hero-amount').textContent = `${formatCurrency(results.savings)}/a\u00f1o`;
-        document.getElementById('savings-hero-sub').textContent = `${formatCurrency(savingsMonthly)}/mes \u2014 cambiando a ${results.best.company}`;
-
-        savingsEl.style.display = 'none';
-      } else {
-        savingsHero.classList.add('no-savings');
-        document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
-        document.getElementById('savings-hero-amount').textContent = 'Tu tarifa ya es muy competitiva';
-        document.getElementById('savings-hero-sub').textContent = '';
-
-        savingsEl.textContent = 'Tu tarifa actual ya es muy competitiva';
-        savingsEl.classList.add('negative');
-        savingsEl.classList.remove('positive');
-      }
-
-      document.getElementById('section-howto').style.display = '';
+    // === Renderizar por caso primario ===
+    switch (scenario.primaryCase) {
+      case 'rank-1':
+      case 'rank-top3':
+        renderCaseAlreadyBest(results, qrData, scenario);
+        break;
+      case 'big-savings':
+        renderCaseBigSavings(results, qrData, scenario);
+        break;
+      case 'small-savings':
+        renderCaseSmallSavings(results, qrData, scenario);
+        break;
+      case 'already-cheap':
+        renderCaseAlreadyCheap(results, qrData, scenario);
+        break;
+      case 'normal-savings':
+      default:
+        renderCaseNormalSavings(results, qrData, scenario);
+        break;
     }
 
     // Alternatives — improved card layout with stacked info
@@ -943,6 +1351,10 @@
     // Show data source badge
     const disclaimer = document.querySelector('.result-disclaimer p');
     disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no est\u00e1 afiliado con ninguna comercializadora.`;
+
+    // Renderizar "Tu nuevo contrato" + banners contextuales
+    renderContractComparison(results, qrData, scenario);
+    renderModifierBanners(scenario, qrData, results);
 
     showScreen('result');
   }
