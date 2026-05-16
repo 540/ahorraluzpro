@@ -503,6 +503,7 @@
       // Show results
       displayConsumption(qrData, companyName);
       displayResults(results, qrData);
+      displayRecomendaciones(qrData);
 
     } catch (e) {
       console.error('Error processing QR:', e);
@@ -691,6 +692,116 @@
 
     if (qrData.importeTotal > 0) {
       document.getElementById('bill-total').textContent = `${qrData.importeTotal.toFixed(2)} \u20AC`;
+    }
+  }
+
+  // --- Recomendaciones técnicas basadas en datos del QR ---
+  function displayRecomendaciones(qrData) {
+    // 1) Potencia: comparar pmax demandada vs potencia contratada
+    const pContratada = qrData.potenciaP1 || 0;
+    const pmax = Math.max(
+      qrData.pmaxP1 || 0,
+      qrData.pmaxP2 || 0,
+      qrData.pmaxP3 || 0,
+      qrData.pmaxP4 || 0,
+      qrData.pmaxP5 || 0,
+      qrData.pmaxP6 || 0
+    );
+    const potValEl = document.getElementById('reco-potencia-value');
+    const potDetEl = document.getElementById('reco-potencia-detail');
+    if (pContratada > 0 && pmax > 0) {
+      const sugerida = Math.max(2.0, Math.ceil((pmax * 1.1) * 10) / 10);
+      const ratio = pmax / pContratada;
+      if (sugerida < pContratada - 0.2) {
+        // Estimación grosera: ~38€/kW/año en término de potencia
+        const ahorroEstim = Math.round((pContratada - sugerida) * 38);
+        potValEl.textContent = `${pContratada.toFixed(2)} kW → ${sugerida.toFixed(1)} kW`;
+        potDetEl.innerHTML = `Tu pico real fue <strong>${pmax.toFixed(2)} kW</strong>. Bajar la contratada podrías ahorrar <strong>~${ahorroEstim} €/año</strong>.`;
+        document.getElementById('reco-potencia-card').classList.add('reco-card-alert');
+      } else if (ratio > 0.95) {
+        potValEl.textContent = `${pContratada.toFixed(2)} kW — al límite`;
+        potDetEl.innerHTML = `Tu pico (${pmax.toFixed(2)} kW) está cerca del límite. Considera <strong>subir</strong> potencia para evitar cortes.`;
+        document.getElementById('reco-potencia-card').classList.add('reco-card-alert');
+      } else {
+        potValEl.textContent = `${pContratada.toFixed(2)} kW`;
+        potDetEl.innerHTML = `Pico real: ${pmax.toFixed(2)} kW. Tu potencia contratada está bien dimensionada.`;
+      }
+    } else if (pContratada > 0) {
+      potValEl.textContent = `${pContratada.toFixed(2)} kW`;
+      potDetEl.textContent = 'Sin datos de potencia máxima en el QR para sugerir ajuste.';
+    } else {
+      document.getElementById('reco-potencia-card').style.display = 'none';
+    }
+
+    // 2) Tipo de tarifa según distribución del consumo
+    const cP1 = qrData.consumoAnualP1 || 0;
+    const cP2 = qrData.consumoAnualP2 || 0;
+    const cP3 = qrData.consumoAnualP3 || 0;
+    const totalConsumo = cP1 + cP2 + cP3;
+    const tarValEl = document.getElementById('reco-tarifa-value');
+    const tarDetEl = document.getElementById('reco-tarifa-detail');
+    if (totalConsumo > 0) {
+      const pctValle = cP3 / totalConsumo;
+      const pctPunta = cP1 / totalConsumo;
+      const pctLlano = cP2 / totalConsumo;
+      if (pctValle >= 0.45) {
+        tarValEl.textContent = 'Discriminación horaria';
+        tarDetEl.innerHTML = `Consumes <strong>${Math.round(pctValle * 100)}%</strong> en valle. Tarifas con descuento nocturno te beneficiarán más.`;
+      } else if (pctPunta >= 0.45) {
+        tarValEl.textContent = 'Tarifa plana';
+        tarDetEl.innerHTML = `Tu consumo en punta es alto (<strong>${Math.round(pctPunta * 100)}%</strong>). Una tarifa fija sin discriminación suele convenirte.`;
+      } else {
+        tarValEl.textContent = '2.0TD estándar';
+        tarDetEl.innerHTML = `Consumo equilibrado (P:${Math.round(pctPunta*100)}% L:${Math.round(pctLlano*100)}% V:${Math.round(pctValle*100)}%). La 2.0TD genérica te funciona bien.`;
+      }
+    } else {
+      document.getElementById('reco-tarifa-card').style.display = 'none';
+    }
+
+    // 3) Coste real €/kWh vs media nacional (~0.20 €/kWh PVPC promedio reciente)
+    const imp = qrData.importeTotal || 0;
+    const consumoFact = (qrData.consumoFactP1 || 0) + (qrData.consumoFactP2 || 0) + (qrData.consumoFactP3 || 0);
+    const costValEl = document.getElementById('reco-coste-value');
+    const costDetEl = document.getElementById('reco-coste-detail');
+    if (imp > 0 && consumoFact > 0) {
+      const costeKwh = imp / consumoFact;
+      const media = 0.20;
+      const dif = (costeKwh / media - 1) * 100;
+      costValEl.textContent = `${costeKwh.toFixed(3)} €/kWh`;
+      if (dif > 10) {
+        costDetEl.innerHTML = `<strong>${Math.round(dif)}% por encima</strong> de la media nacional. Hay margen claro de ahorro.`;
+        document.getElementById('reco-coste-card').classList.add('reco-card-alert');
+      } else if (dif < -10) {
+        costDetEl.innerHTML = `<strong>${Math.abs(Math.round(dif))}% por debajo</strong> de la media. Tarifa muy competitiva.`;
+        document.getElementById('reco-coste-card').classList.add('reco-card-good');
+      } else {
+        costDetEl.innerHTML = `Cerca de la media nacional (${media.toFixed(2)} €/kWh).`;
+      }
+    } else {
+      document.getElementById('reco-coste-card').style.display = 'none';
+    }
+
+    // 4) Permanencia
+    const permValEl = document.getElementById('reco-permanencia-value');
+    const permDetEl = document.getElementById('reco-permanencia-detail');
+    if (qrData.finPenalizacion) {
+      const finPen = new Date(qrData.finPenalizacion);
+      const now = new Date();
+      if (!isNaN(finPen) && finPen > now) {
+        const dias = Math.ceil((finPen - now) / (1000 * 60 * 60 * 24));
+        const fecha = finPen.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        permValEl.textContent = `${dias} días restantes`;
+        permDetEl.innerHTML = `Acaba el <strong>${fecha}</strong>. Cambiar antes puede tener penalización.`;
+        document.getElementById('reco-permanencia-card').classList.add('reco-card-alert');
+      } else {
+        permValEl.textContent = 'Sin permanencia';
+        permDetEl.textContent = 'Puedes cambiar de comercializadora libremente.';
+        document.getElementById('reco-permanencia-card').classList.add('reco-card-good');
+      }
+    } else {
+      permValEl.textContent = 'Sin permanencia';
+      permDetEl.textContent = 'No tienes permanencia activa. Puedes cambiar libremente.';
+      document.getElementById('reco-permanencia-card').classList.add('reco-card-good');
     }
   }
 

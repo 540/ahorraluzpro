@@ -37,6 +37,35 @@
         </div>
       </div>
 
+      <!-- Mockup card: visible solo en desktop, reemplaza el panel de pasos -->
+      <aside class="landing-mockup" aria-hidden="true">
+        <div class="mockup-chip">Ejemplo real</div>
+        <div class="mockup-label">Ahorro detectado al a&ntilde;o</div>
+        <div class="mockup-amount">234 &euro;</div>
+        <div class="mockup-comparison">
+          <div class="mockup-side mockup-from">
+            <span class="mockup-side-label">Ahora</span>
+            <span class="mockup-side-company">Iberdrola</span>
+            <span class="mockup-side-amount">892 &euro;</span>
+          </div>
+          <span class="mockup-arrow">&rarr;</span>
+          <div class="mockup-side mockup-to">
+            <span class="mockup-side-label">Mejor oferta</span>
+            <span class="mockup-side-company">Repsol Estable</span>
+            <span class="mockup-side-amount">658 &euro;</span>
+          </div>
+        </div>
+        <div class="mockup-bar-block">
+          <div class="mockup-bar"><div class="mockup-bar-fill"></div></div>
+          <span class="mockup-bar-label">&minus;26% en tu factura anual</span>
+        </div>
+        <div class="mockup-tags">
+          <span class="mockup-tag mockup-tag-green">&#x1F33F; 100% verde</span>
+          <span class="mockup-tag">&#x1F513; Sin permanencia</span>
+        </div>
+        <div class="mockup-footnote">Datos oficiales de la CNMC &middot; Actualizado hoy</div>
+      </aside>
+
       <button id="btn-scan" class="btn-primary">Escanear QR de mi factura</button>
       <div class="trust-badges">
         <span><span class="badge-icon">&#x1f512;</span> Sin registro</span>
@@ -139,6 +168,51 @@
             <span class="result-best-offer-name" id="result-best-offer-name"></span>
             <div class="result-best-features" id="result-best-features"></div>
             <div class="result-savings" id="result-savings">&mdash;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- === Recomendaciones t&eacute;cnicas (datos del QR) === -->
+      <div class="section-block" id="section-recomendaciones">
+        <div class="section-header">
+          <h3>Recomendaciones para ti</h3>
+          <button class="help-toggle" data-help="help-recomendaciones" aria-label="Ayuda">?</button>
+        </div>
+        <div class="help-text" id="help-recomendaciones">
+          <p>An&aacute;lisis t&eacute;cnico basado en los datos reales de tu factura. Te sugerimos optimizaciones m&aacute;s all&aacute; del simple cambio de comercializadora.</p>
+        </div>
+        <div class="reco-grid">
+          <div class="reco-card" id="reco-potencia-card">
+            <div class="reco-icon" aria-hidden="true">&#9889;</div>
+            <div class="reco-body">
+              <div class="reco-label">Potencia contratada</div>
+              <div class="reco-value" id="reco-potencia-value">&mdash;</div>
+              <div class="reco-detail" id="reco-potencia-detail">&mdash;</div>
+            </div>
+          </div>
+          <div class="reco-card" id="reco-tarifa-card">
+            <div class="reco-icon" aria-hidden="true">&#x1F4CA;</div>
+            <div class="reco-body">
+              <div class="reco-label">Tipo de tarifa &oacute;ptima</div>
+              <div class="reco-value" id="reco-tarifa-value">&mdash;</div>
+              <div class="reco-detail" id="reco-tarifa-detail">&mdash;</div>
+            </div>
+          </div>
+          <div class="reco-card" id="reco-coste-card">
+            <div class="reco-icon" aria-hidden="true">&#x1F4B0;</div>
+            <div class="reco-body">
+              <div class="reco-label">Tu coste real por kWh</div>
+              <div class="reco-value" id="reco-coste-value">&mdash;</div>
+              <div class="reco-detail" id="reco-coste-detail">&mdash;</div>
+            </div>
+          </div>
+          <div class="reco-card" id="reco-permanencia-card">
+            <div class="reco-icon" aria-hidden="true">&#x1F5D3;</div>
+            <div class="reco-body">
+              <div class="reco-label">Permanencia</div>
+              <div class="reco-value" id="reco-permanencia-value">&mdash;</div>
+              <div class="reco-detail" id="reco-permanencia-detail">&mdash;</div>
+            </div>
           </div>
         </div>
       </div>
