@@ -1758,6 +1758,138 @@ html, body {
 .logo-ticker { display: none; }
 
 /* ===================================================================
+   MOBILE LANDING — simplificación drástica para fit en una pantalla
+   Aplica hasta tablet (<1024px). En desktop se reactivan los elementos
+   ocultos via media query.
+   =================================================================== */
+@media (max-width: 1023px) {
+  /* Pantalla más compacta verticalmente */
+  #screen-landing.active {
+    padding-top: max(env(safe-area-inset-top, 16px), 16px);
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    justify-content: center;
+  }
+
+  .landing-content {
+    max-width: 420px;
+  }
+
+  /* Logo y tagline más compactos */
+  .logo-mark {
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  .logo-tagline {
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  /* H1 compacto */
+  .landing-content h1 {
+    font-size: 26px;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    letter-spacing: -0.3px;
+  }
+
+  /* Elementos eliminados en mobile */
+  .subtitle,
+  .landing-steps,
+  .social-proof,
+  .privacy-note,
+  .faq {
+    display: none;
+  }
+
+  /* Mockup compacto: ocultar barra, tags y los amounts/labels de la
+     comparativa. Queda: chip + label + amount grande + 1 línea con
+     "Iberdrola → Repsol Estable" + footer (profile + dots). */
+  .landing-mockup {
+    padding: 18px 18px;
+    gap: 8px;
+    margin: 0 0 20px 0;
+  }
+  .landing-mockup::before {
+    width: 160px;
+    height: 160px;
+    top: -60px;
+    right: -60px;
+  }
+
+  .mockup-chip {
+    font-size: 9px;
+    padding: 3px 9px 3px 7px;
+    letter-spacing: 1.2px;
+  }
+  .mockup-chip-dot {
+    width: 5px;
+    height: 5px;
+  }
+  .mockup-label {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+  }
+  .mockup-amount {
+    font-size: 48px;
+    letter-spacing: -1.5px;
+  }
+
+  /* Comparativa reducida a 1 línea: solo nombres con flecha */
+  .mockup-comparison {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    grid-template-columns: auto auto auto;
+    justify-content: center;
+    gap: 8px;
+  }
+  .mockup-side-label,
+  .mockup-side-amount {
+    display: none;
+  }
+  .mockup-side-company {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .mockup-to .mockup-side-company {
+    color: var(--accent);
+  }
+  .mockup-arrow {
+    font-size: 13px;
+  }
+
+  /* Ocultar barra y tags en mobile (no caben sin sacrificar el resto) */
+  .mockup-bar-block,
+  .mockup-tags {
+    display: none;
+  }
+
+  .mockup-footer {
+    padding-top: 6px;
+  }
+  .mockup-profile {
+    font-size: 10px;
+  }
+
+  /* CTA un poco más compacto */
+  .btn-primary {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+
+  /* Trust badges compactos en una línea */
+  .trust-badges {
+    margin-top: 14px;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .trust-badges span {
+    padding: 5px 10px;
+  }
+}
+
+/* ===================================================================
    RECOMENDACIONES TÉCNICAS — base mobile-first
    =================================================================== */
 .reco-grid {
