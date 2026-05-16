@@ -1268,15 +1268,14 @@
 
   function renderCaseAlreadyBest(results, qrData, scenario) {
     const isRank1 = scenario.primaryCase === 'rank-1';
-    const heroLabel = document.getElementById('savings-hero-label');
-    const heroAmount = document.getElementById('savings-hero-amount');
-    const heroSub = document.getElementById('savings-hero-sub');
     const savingsHero = document.getElementById('savings-hero');
-
     savingsHero.classList.add('no-savings');
-    heroLabel.textContent = isRank1 ? 'Enhorabuena' : 'Tu tarifa actual';
-    heroAmount.textContent = isRank1 ? '✓ Tienes la mejor oferta' : 'Estás entre las mejores tarifas';
-    heroSub.textContent = `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas analizadas`;
+    setHero(
+      isRank1 ? 'Enhorabuena' : 'Tu tarifa actual',
+      isRank1 ? '✓ Tienes la mejor oferta' : 'Entre las mejores tarifas',
+      `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas analizadas`,
+      null
+    );
 
     document.getElementById('best-header').textContent = isRank1
       ? 'Tu oferta actual es la #1'
@@ -1295,69 +1294,77 @@
     document.getElementById('section-howto').style.display = 'none';
   }
 
+  // Helper: aplica los textos del hero con el nuevo orden (sub = cambiando a X,
+  // context = mensaje secundario opcional como "X% de más").
+  function setHero(label, amount, sub, context) {
+    document.getElementById('savings-hero-label').textContent = label;
+    document.getElementById('savings-hero-amount').textContent = amount;
+    document.getElementById('savings-hero-sub').innerHTML = sub || '';
+    const ctxEl = document.getElementById('savings-hero-context');
+    if (ctxEl) {
+      ctxEl.innerHTML = context || '';
+      ctxEl.style.display = context ? '' : 'none';
+    }
+  }
+
   function renderCaseBigSavings(results, qrData, scenario) {
-    const heroLabel = document.getElementById('savings-hero-label');
-    const heroAmount = document.getElementById('savings-hero-amount');
-    const heroSub = document.getElementById('savings-hero-sub');
     const savingsHero = document.getElementById('savings-hero');
     savingsHero.classList.remove('no-savings');
     savingsHero.classList.add('savings-big');
-
     const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
-    heroLabel.textContent = 'Ahorro disponible';
-    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
-    heroSub.innerHTML = `Estás pagando un <strong>${pct}% de más</strong> &mdash; cambiando a ${results.best.company}`;
+    setHero(
+      'Ahorro disponible',
+      `${formatCurrency(results.savings)}/año`,
+      `cambiando a <strong>${results.best.company}</strong>`,
+      `Estás pagando un <strong>${pct}% de más</strong> que la mejor oferta`
+    );
 
     document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
     const bestBadge = document.getElementById('result-badge');
     bestBadge.textContent = `#1 de ${results.totalOffers}`;
     bestBadge.classList.remove('badge-good');
     document.getElementById('alt-header').textContent = 'También podrías considerar';
-
     document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
     document.getElementById('result-savings').style.display = 'none';
     document.getElementById('section-howto').style.display = '';
   }
 
   function renderCaseNormalSavings(results, qrData, scenario) {
-    const heroLabel = document.getElementById('savings-hero-label');
-    const heroAmount = document.getElementById('savings-hero-amount');
-    const heroSub = document.getElementById('savings-hero-sub');
     const savingsHero = document.getElementById('savings-hero');
     savingsHero.classList.remove('no-savings', 'savings-big');
-
-    heroLabel.textContent = 'Tu ahorro potencial';
-    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
-    heroSub.textContent = `${formatCurrency(results.savings / 12)}/mes — cambiando a ${results.best.company}`;
+    const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
+    setHero(
+      'Ahorro disponible',
+      `${formatCurrency(results.savings)}/año`,
+      `cambiando a <strong>${results.best.company}</strong>`,
+      `${formatCurrency(results.savings / 12)}/mes · estás pagando un ${pct}% de más`
+    );
 
     document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
     const bestBadge = document.getElementById('result-badge');
     bestBadge.textContent = `#1 de ${results.totalOffers}`;
     bestBadge.classList.remove('badge-good');
     document.getElementById('alt-header').textContent = 'También podrías considerar';
-
     document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
     document.getElementById('result-savings').style.display = 'none';
     document.getElementById('section-howto').style.display = '';
   }
 
   function renderCaseSmallSavings(results, qrData, scenario) {
-    const heroLabel = document.getElementById('savings-hero-label');
-    const heroAmount = document.getElementById('savings-hero-amount');
-    const heroSub = document.getElementById('savings-hero-sub');
     const savingsHero = document.getElementById('savings-hero');
     savingsHero.classList.remove('no-savings', 'savings-big');
-
-    heroLabel.textContent = 'Ahorro marginal disponible';
-    heroAmount.textContent = `${formatCurrency(results.savings)}/año`;
-    heroSub.innerHTML = `Tu tarifa actual es razonable. Cambiar te da un ahorro pequeño &mdash; valora si el esfuerzo compensa.`;
+    setHero(
+      'Ahorro marginal',
+      `${formatCurrency(results.savings)}/año`,
+      `cambiando a <strong>${results.best.company}</strong>`,
+      `Tu tarifa actual es razonable. Valora si el cambio compensa.`
+    );
 
     document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
     const bestBadge = document.getElementById('result-badge');
     bestBadge.textContent = `#1 de ${results.totalOffers}`;
     bestBadge.classList.remove('badge-good');
     document.getElementById('alt-header').textContent = 'También podrías considerar';
-
     document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
     document.getElementById('result-savings').style.display = 'none';
     document.getElementById('section-howto').style.display = '';
@@ -1366,9 +1373,12 @@
   function renderCaseAlreadyCheap(results, qrData, scenario) {
     const savingsHero = document.getElementById('savings-hero');
     savingsHero.classList.add('no-savings');
-    document.getElementById('savings-hero-label').textContent = 'Tu tarifa actual';
-    document.getElementById('savings-hero-amount').textContent = 'Ya es muy competitiva';
-    document.getElementById('savings-hero-sub').textContent = `No hemos encontrado nada mejor entre ${results.totalOffers} ofertas`;
+    setHero(
+      'Tu tarifa actual',
+      'Ya es muy competitiva',
+      `No hemos encontrado nada mejor entre ${results.totalOffers} ofertas`,
+      null
+    );
 
     document.getElementById('best-header').textContent = 'La oferta más barata del mercado';
     const bestBadge = document.getElementById('result-badge');
@@ -1399,10 +1409,10 @@
       return;
     }
 
-    // Comparison: best offer side
-    document.getElementById('result-best-company').textContent = results.best.offerName
-      ? `${results.best.offerName}`
-      : results.best.company;
+    // Comparison: best offer side — empresa destacada arriba, tarifa pequeña debajo
+    document.getElementById('result-best-company').textContent = results.best.company;
+    const bestTariffEl = document.getElementById('result-best-tariff');
+    if (bestTariffEl) bestTariffEl.textContent = results.best.offerName || '';
     document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
     document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
 
@@ -1480,8 +1490,26 @@
     renderContractComparison(results, qrData, scenario);
     renderModifierBanners(scenario, qrData, results);
 
+    // En desktop, abrir las secciones desplegables automáticamente
+    applyCollapsibleDefaults();
+
     showScreen('result');
   }
+
+  // En desktop (>=1024px) abrimos los <details> de las 3 secciones para que
+  // se vea todo a la vez. En mobile quedan cerrados — el usuario los expande.
+  function applyCollapsibleDefaults() {
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    document.querySelectorAll('.collapsible-section').forEach(d => {
+      d.open = isDesktop;
+    });
+  }
+  // Reajustar al redimensionar (desktop->mobile o viceversa)
+  window.addEventListener('resize', () => {
+    if (document.getElementById('screen-result').classList.contains('active')) {
+      applyCollapsibleDefaults();
+    }
+  });
 
   // --- Loading steps ---
   function resetLoadingSteps() {
