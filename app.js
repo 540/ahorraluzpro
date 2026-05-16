@@ -27,6 +27,130 @@
   document.getElementById('btn-restart').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-retry').addEventListener('click', startScanner);
 
+  // --- Landing mockup carousel (vistosidad de portada) ---
+  // Casos reales/representativos que rotan en la card de la landing.
+  const MOCKUP_CASES = [
+    {
+      currentCompany: 'Iberdrola', bestCompany: 'Repsol Estable',
+      currentAmount: 892, bestAmount: 658, savings: 234, pctDown: 26,
+      profile: 'Familia 4 personas · Madrid',
+      tags: [
+        { text: '100% verde', icon: '🌿', green: true },
+        { text: 'Sin permanencia', icon: '🔓', green: false }
+      ]
+    },
+    {
+      currentCompany: 'Endesa', bestCompany: 'Holaluz',
+      currentAmount: 1340, bestAmount: 928, savings: 412, pctDown: 31,
+      profile: 'Vivienda grande · Sevilla',
+      tags: [
+        { text: '100% verde', icon: '🌿', green: true },
+        { text: 'Sin permanencia', icon: '🔓', green: false }
+      ]
+    },
+    {
+      currentCompany: 'Naturgy', bestCompany: 'Total Energies',
+      currentAmount: 645, bestAmount: 458, savings: 187, pctDown: 29,
+      profile: 'Piso 70m² · Valencia',
+      tags: [
+        { text: 'Precio fijo 12m', icon: '🔒', green: false }
+      ]
+    },
+    {
+      currentCompany: 'Iberdrola', bestCompany: 'Octopus Energy',
+      currentAmount: 1158, bestAmount: 838, savings: 320, pctDown: 28,
+      profile: 'Casa + autoconsumo · Barcelona',
+      tags: [
+        { text: 'Compensa excedentes', icon: '☀️', green: true },
+        { text: 'Sin permanencia', icon: '🔓', green: false }
+      ]
+    },
+  ];
+
+  let mockupIdx = 0;
+  let mockupTimer = null;
+  const MOCKUP_ROTATE_MS = 5000;
+  const MOCKUP_FADE_MS = 280;
+
+  function formatEur(n) {
+    return n.toLocaleString('es-ES') + ' €';
+  }
+
+  function animateCounter(el, from, to, duration) {
+    if (!el) return;
+    const start = performance.now();
+    function step(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const value = Math.round(from + (to - from) * eased);
+      el.textContent = formatEur(value);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function renderMockupCase(c, animate) {
+    const amountEl = document.getElementById('mockup-amount');
+    if (!amountEl) return;
+    document.getElementById('mockup-current-company').textContent = c.currentCompany;
+    document.getElementById('mockup-current-amount').textContent = formatEur(c.currentAmount);
+    document.getElementById('mockup-best-company').textContent = c.bestCompany;
+    document.getElementById('mockup-best-amount').textContent = formatEur(c.bestAmount);
+    document.getElementById('mockup-bar-label').textContent = `−${c.pctDown}% en tu factura anual`;
+    document.getElementById('mockup-profile').textContent = c.profile;
+    // tags
+    const tagsEl = document.getElementById('mockup-tags');
+    tagsEl.innerHTML = c.tags.map(t =>
+      `<span class="mockup-tag ${t.green ? 'mockup-tag-green' : ''}">${t.icon} ${t.text}</span>`
+    ).join('');
+    // bar fill (use CSS transition)
+    requestAnimationFrame(() => {
+      document.getElementById('mockup-bar-fill').style.width = c.pctDown + '%';
+    });
+    // amount counter
+    if (animate) {
+      animateCounter(amountEl, 0, c.savings, 700);
+    } else {
+      amountEl.textContent = formatEur(c.savings);
+    }
+  }
+
+  function renderMockupDots() {
+    const dotsEl = document.getElementById('mockup-dots');
+    if (!dotsEl) return;
+    dotsEl.innerHTML = MOCKUP_CASES.map((_, i) =>
+      `<span class="mockup-dot ${i === mockupIdx ? 'active' : ''}"></span>`
+    ).join('');
+  }
+
+  function rotateMockup() {
+    const card = document.querySelector('.landing-mockup');
+    if (!card) return;
+    card.classList.add('mockup-fading');
+    setTimeout(() => {
+      mockupIdx = (mockupIdx + 1) % MOCKUP_CASES.length;
+      renderMockupCase(MOCKUP_CASES[mockupIdx], true);
+      renderMockupDots();
+      card.classList.remove('mockup-fading');
+    }, MOCKUP_FADE_MS);
+  }
+
+  function initMockupCarousel() {
+    if (!document.querySelector('.landing-mockup')) return;
+    renderMockupCase(MOCKUP_CASES[0], true);
+    renderMockupDots();
+    if (mockupTimer) clearInterval(mockupTimer);
+    mockupTimer = setInterval(rotateMockup, MOCKUP_ROTATE_MS);
+  }
+
+  // Arrancar el carrusel al cargar
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMockupCarousel);
+  } else {
+    initMockupCarousel();
+  }
+
   function stopAndGoHome() {
     stopScanner();
     showScreen('landing');

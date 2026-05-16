@@ -37,42 +37,103 @@
         </div>
       </div>
 
-      <!-- Mockup card: visible solo en desktop, reemplaza el panel de pasos -->
+      <!-- Mockup card con carrusel rotativo -->
       <aside class="landing-mockup" aria-hidden="true">
-        <div class="mockup-chip">Ejemplo real</div>
+        <div class="mockup-chip">
+          <span class="mockup-chip-dot" aria-hidden="true"></span>
+          Caso real
+        </div>
         <div class="mockup-label">Ahorro detectado al a&ntilde;o</div>
-        <div class="mockup-amount">234 &euro;</div>
+        <div class="mockup-amount" id="mockup-amount">234 &euro;</div>
         <div class="mockup-comparison">
           <div class="mockup-side mockup-from">
             <span class="mockup-side-label">Ahora</span>
-            <span class="mockup-side-company">Iberdrola</span>
-            <span class="mockup-side-amount">892 &euro;</span>
+            <span class="mockup-side-company" id="mockup-current-company">Iberdrola</span>
+            <span class="mockup-side-amount" id="mockup-current-amount">892 &euro;</span>
           </div>
-          <span class="mockup-arrow">&rarr;</span>
+          <span class="mockup-arrow" aria-hidden="true">&rarr;</span>
           <div class="mockup-side mockup-to">
             <span class="mockup-side-label">Mejor oferta</span>
-            <span class="mockup-side-company">Repsol Estable</span>
-            <span class="mockup-side-amount">658 &euro;</span>
+            <span class="mockup-side-company" id="mockup-best-company">Repsol Estable</span>
+            <span class="mockup-side-amount" id="mockup-best-amount">658 &euro;</span>
           </div>
         </div>
         <div class="mockup-bar-block">
-          <div class="mockup-bar"><div class="mockup-bar-fill"></div></div>
-          <span class="mockup-bar-label">&minus;26% en tu factura anual</span>
+          <div class="mockup-bar"><div class="mockup-bar-fill" id="mockup-bar-fill"></div></div>
+          <span class="mockup-bar-label" id="mockup-bar-label">&minus;26% en tu factura anual</span>
         </div>
-        <div class="mockup-tags">
+        <div class="mockup-tags" id="mockup-tags">
           <span class="mockup-tag mockup-tag-green">&#x1F33F; 100% verde</span>
           <span class="mockup-tag">&#x1F513; Sin permanencia</span>
         </div>
-        <div class="mockup-footnote">Datos oficiales de la CNMC &middot; Actualizado hoy</div>
+        <div class="mockup-footer">
+          <div class="mockup-profile" id="mockup-profile">Familia 4 personas &middot; Madrid</div>
+          <div class="mockup-dots" id="mockup-dots" aria-hidden="true"></div>
+        </div>
       </aside>
 
       <button id="btn-scan" class="btn-primary">Escanear QR de mi factura</button>
+
+      <!-- Social proof: banda con m&eacute;tricas que dan credibilidad -->
+      <div class="social-proof" id="social-proof">
+        <div class="social-proof-item">
+          <span class="social-proof-num" id="sp-tarifas">240+</span>
+          <span class="social-proof-lbl">tarifas analizadas</span>
+        </div>
+        <div class="social-proof-divider" aria-hidden="true"></div>
+        <div class="social-proof-item">
+          <span class="social-proof-num"><span id="sp-ahorro">187</span> &euro;</span>
+          <span class="social-proof-lbl">ahorro medio anual</span>
+        </div>
+        <div class="social-proof-divider" aria-hidden="true"></div>
+        <div class="social-proof-item">
+          <span class="social-proof-num">CNMC</span>
+          <span class="social-proof-lbl">datos oficiales</span>
+        </div>
+      </div>
+
       <div class="trust-badges">
         <span><span class="badge-icon">&#x1f512;</span> Sin registro</span>
         <span><span class="badge-icon">&#x2714;</span> 100% gratis</span>
         <span><span class="badge-icon">&#x1f91d;</span> Sin compromiso</span>
       </div>
       <p class="privacy-note">Todo el an&aacute;lisis ocurre en tu dispositivo. No almacenamos ning&uacute;n dato.</p>
+
+      <!-- Ticker de comercializadoras (solo desktop) -->
+      <div class="logo-ticker" id="logo-ticker" aria-hidden="true">
+        <div class="logo-ticker-label">Comparamos todas las comercializadoras del mercado:</div>
+        <div class="logo-ticker-track">
+          <div class="logo-ticker-list">
+            <span class="logo-item">Iberdrola</span>
+            <span class="logo-item">Endesa</span>
+            <span class="logo-item">Naturgy</span>
+            <span class="logo-item">Repsol</span>
+            <span class="logo-item">Holaluz</span>
+            <span class="logo-item">Total Energies</span>
+            <span class="logo-item">Octopus Energy</span>
+            <span class="logo-item">Lucera</span>
+            <span class="logo-item">Imagina Energ&iacute;a</span>
+            <span class="logo-item">Pl&eacute;netic</span>
+            <span class="logo-item">Acciona</span>
+            <span class="logo-item">EDP</span>
+          </div>
+          <div class="logo-ticker-list" aria-hidden="true">
+            <span class="logo-item">Iberdrola</span>
+            <span class="logo-item">Endesa</span>
+            <span class="logo-item">Naturgy</span>
+            <span class="logo-item">Repsol</span>
+            <span class="logo-item">Holaluz</span>
+            <span class="logo-item">Total Energies</span>
+            <span class="logo-item">Octopus Energy</span>
+            <span class="logo-item">Lucera</span>
+            <span class="logo-item">Imagina Energ&iacute;a</span>
+            <span class="logo-item">Pl&eacute;netic</span>
+            <span class="logo-item">Acciona</span>
+            <span class="logo-item">EDP</span>
+          </div>
+        </div>
+      </div>
+
       <details class="faq">
         <summary>&iquest;D&oacute;nde est&aacute; el c&oacute;digo QR?</summary>
         <p>Desde 2021, todas las facturas de luz en Espa&ntilde;a incluyen un c&oacute;digo QR obligatorio por la CNMC. Lo encontrar&aacute;s normalmente en la primera p&aacute;gina de tu factura, cerca de los datos del contrato.</p>
