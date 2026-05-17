@@ -164,6 +164,9 @@
 
   // --- QR Scanner (BarcodeDetector native API + jsQR fallback) ---
   async function startScanner() {
+    // Mientras el usuario apunta al QR, vamos calentando el proxy en
+    // background para que la primera llamada real ya no pague cold start.
+    warmupProxy();
     showScreen('scanner');
     const video = document.getElementById('qr-video');
     const canvas = document.getElementById('qr-canvas');
@@ -484,8 +487,19 @@
   // For local dev: use direct URL (works without Origin from file://)
   const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
-  const PROXY_TIMEOUT_MS = 4500;
+  // Subido a 12s para tolerar cold start del worker (~1-3s) + latencia
+  // de CNMC (puede llegar a 7-8s en el endpoint /ofertas/electricidad).
+  const PROXY_TIMEOUT_MS = 12000;
   const DIRECT_TIMEOUT_MS = 12000;
+
+  // Warm-up del worker: una petición ligera al endpoint /health del proxy
+  // para que el worker arranque mientras el usuario está en la pantalla
+  // del scanner. Reduce el primer fetch real en 1-3s (cold start).
+  function warmupProxy() {
+    fetch(PROXY_BASE.replace(/\/api\/publico\/$/, '/health'), {
+      cache: 'no-store',
+    }).catch(() => {});
+  }
 
   // Fetch con timeout via AbortController. Si el endpoint no responde en
   // `ms` cancelamos para no quedar colgados en el paso intermedio.
