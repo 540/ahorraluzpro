@@ -485,7 +485,19 @@
   // Proxy needed: CNMC nginx blocks requests with Origin header (403)
   // Deploy proxy-worker.js to Cloudflare Workers and set URL here
   // For local dev: use direct URL (works without Origin from file://)
-  const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
+  // Lista ordenada de proxies. La app prueba en orden hasta que uno responda.
+  // Cuando despliegues Vercel, pon su URL como primer elemento.
+  // Para testing local, puedes inyectar uno con localStorage.setItem('ahorraluz.proxy', 'https://...').
+  const PROXY_BASES = [
+    // Vercel proxy: el path se pasa como query param ?path=<endpoint>
+    // Descomentar y poner la URL real cuando despliegues api/cnmc.js a Vercel:
+    // 'https://AHORRALUZ.vercel.app/api/cnmc?path=',
+    'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/',
+  ];
+  // Override puntual desde localStorage (sin redeploy).
+  const lsProxy = (typeof localStorage !== 'undefined' && localStorage.getItem('ahorraluz.proxy')) || '';
+  if (lsProxy) PROXY_BASES.unshift(lsProxy);
+
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
   // Timeouts muy generosos: el endpoint /ofertas/electricidad de CNMC
   // puede tardar 15-25s desde algunos edges de Cloudflare *.workers.dev
@@ -500,12 +512,18 @@
   // caso de fallo sepamos qué pasó realmente con el proxy.
   let lastApiDiag = null;
 
-  // Warm-up del worker: petición ligera a /health para arrancarlo en
-  // background mientras el usuario está en el scanner.
+  // Warm-up: ping a /health (Vercel) o /health del worker para que el
+  // proxy esté caliente cuando el usuario termine de escanear.
   function warmupProxy() {
-    fetch(PROXY_BASE.replace(/\/api\/publico\/$/, '/health'), {
-      cache: 'no-store',
-    }).catch(() => {});
+    PROXY_BASES.forEach(base => {
+      let healthUrl;
+      if (base.includes('?path=')) {
+        healthUrl = base + 'health';
+      } else {
+        healthUrl = base.replace(/\/api\/publico\/?$/, '/health');
+      }
+      fetch(healthUrl, { cache: 'no-store' }).catch(() => {});
+    });
   }
 
   // Fetch con timeout via AbortController. Si el endpoint no responde en
@@ -520,26 +538,45 @@
     }
   }
 
-  async function fetchFromApi(path) {
-    const diag = { proxy: null, direct: null, startedAt: Date.now() };
+  function buildProxyUrl(base, pathWithQuery) {
+    // Vercel style: base = "https://x.vercel.app/api/cnmc?path="
+    //   pathWithQuery = "ofertas/electricidad?cp=31006&pot=3"
+    //   resultado = "https://x.vercel.app/api/cnmc?path=ofertas/electricidad&cp=31006&pot=3"
+    if (base.endsWith('?path=')) {
+      const qIdx = pathWithQuery.indexOf('?');
+      if (qIdx === -1) return base + pathWithQuery;
+      const endpoint = pathWithQuery.slice(0, qIdx);
+      const query = pathWithQuery.slice(qIdx + 1);
+      return base + endpoint + '&' + query;
+    }
+    // Cloudflare style: base ya termina en /api/publico/
+    return base + pathWithQuery;
+  }
 
-    // 1) Proxy de Cloudflare (necesario en producción por CORS).
-    const tProxy = Date.now();
-    try {
-      const response = await fetchWithTimeout(
-        `${PROXY_BASE}${path}`,
-        PROXY_TIMEOUT_MS,
-        { headers: { 'Accept': 'application/json' } }
-      );
-      diag.proxy = { status: response.status, ms: Date.now() - tProxy };
-      if (response.ok) {
-        lastApiDiag = diag;
-        return response;
+  async function fetchFromApi(path) {
+    const diag = { proxies: [], direct: null, startedAt: Date.now() };
+
+    // 1) Probar cada proxy en orden hasta que uno responda 2xx
+    for (const base of PROXY_BASES) {
+      const t = Date.now();
+      const url = buildProxyUrl(base, path);
+      try {
+        const response = await fetchWithTimeout(
+          url,
+          PROXY_TIMEOUT_MS,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        const entry = { base: base.slice(0, 50), status: response.status, ms: Date.now() - t };
+        diag.proxies.push(entry);
+        if (response.ok) {
+          lastApiDiag = diag;
+          return response;
+        }
+        console.warn(`Proxy ${entry.base}... ${response.status} en ${entry.ms}ms — siguiente fallback`);
+      } catch (e) {
+        diag.proxies.push({ base: base.slice(0, 50), error: e.name + ': ' + e.message, ms: Date.now() - t });
+        console.warn(`Proxy ${base.slice(0, 50)} ${e.name} en ${Date.now() - t}ms — siguiente fallback`);
       }
-      console.warn(`Proxy ${response.status} en ${diag.proxy.ms}ms — fallback al directo`);
-    } catch (e) {
-      diag.proxy = { error: e.name + ': ' + e.message, ms: Date.now() - tProxy };
-      console.warn(`Proxy ${e.name} en ${diag.proxy.ms}ms (${e.message}) — fallback al directo`);
     }
 
     // 2) Directo: funciona desde localhost/file:// y curl. En producción
