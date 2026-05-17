@@ -487,10 +487,13 @@
   // For local dev: use direct URL (works without Origin from file://)
   const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
-  // 20s para tolerar cold start del worker (~3s peor caso) + latencia
-  // del endpoint CNMC /ofertas/electricidad (medido: hasta 8s).
-  // Vimos que ~12s no alcanzaba en cold start + CNMC lento.
-  const PROXY_TIMEOUT_MS = 20000;
+  // 30s para tolerar el peor caso visto:
+  //  - desde mi entorno con DNS forzado: 7.94s
+  //  - desde algunos edges de Cloudflare *.workers.dev: >20s (challenge
+  //    JS implícito + cold start + CNMC ~8s)
+  // 30s es el máximo de Cloudflare Workers free; si tarda más, hay un
+  // problema infra (procede migrar a custom domain).
+  const PROXY_TIMEOUT_MS = 30000;
   const DIRECT_TIMEOUT_MS = 15000;
 
   // Diagnóstico del último intento — lo expone showError para que en
@@ -647,6 +650,12 @@
       // Step 3: Fetch offers
       activateStep('step-offers');
       const cnmcParams = buildCnmcParams(qrData);
+      // CNMC tarda ~8s. Mostramos un sub-mensaje a los 6s para que el
+      // usuario sepa que sigue trabajando y no piense que se atascó.
+      const slowTip = setTimeout(() => {
+        const stepEl = document.querySelector('#step-offers .step-text');
+        if (stepEl) stepEl.textContent = 'Consultando la CNMC (puede tardar unos segundos)...';
+      }, 6000);
       let offers;
       let apiError = null;
       try {
@@ -654,6 +663,8 @@
       } catch (e) {
         console.error('CNMC API failed:', e);
         apiError = e;
+      } finally {
+        clearTimeout(slowTip);
       }
 
       if (apiError || !offers || !offers.resultadoComparador || offers.resultadoComparador.length === 0) {
