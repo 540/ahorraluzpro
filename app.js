@@ -487,14 +487,14 @@
   // For local dev: use direct URL (works without Origin from file://)
   const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
-  // 30s para tolerar el peor caso visto:
-  //  - desde mi entorno con DNS forzado: 7.94s
-  //  - desde algunos edges de Cloudflare *.workers.dev: >20s (challenge
-  //    JS implícito + cold start + CNMC ~8s)
-  // 30s es el máximo de Cloudflare Workers free; si tarda más, hay un
-  // problema infra (procede migrar a custom domain).
-  const PROXY_TIMEOUT_MS = 30000;
-  const DIRECT_TIMEOUT_MS = 15000;
+  // Timeouts muy generosos: el endpoint /ofertas/electricidad de CNMC
+  // puede tardar 15-25s desde algunos edges de Cloudflare *.workers.dev
+  // (Bot Fight Mode + challenges JS). Antes de introducir AbortController
+  // no había timeout y la app funcionaba aunque lenta — preferimos que
+  // tarde a que aborte. El timeout es solo protección extrema.
+  // Si tarda más de 90s, algo va mal de verdad.
+  const PROXY_TIMEOUT_MS = 90000;
+  const DIRECT_TIMEOUT_MS = 30000;
 
   // Diagnóstico del último intento — lo expone showError para que en
   // caso de fallo sepamos qué pasó realmente con el proxy.
@@ -650,12 +650,21 @@
       // Step 3: Fetch offers
       activateStep('step-offers');
       const cnmcParams = buildCnmcParams(qrData);
-      // CNMC tarda ~8s. Mostramos un sub-mensaje a los 6s para que el
-      // usuario sepa que sigue trabajando y no piense que se atascó.
-      const slowTip = setTimeout(() => {
-        const stepEl = document.querySelector('#step-offers .step-text');
-        if (stepEl) stepEl.textContent = 'Consultando la CNMC (puede tardar unos segundos)...';
+      // El endpoint /ofertas/electricidad de CNMC tarda 8-25s.
+      // Cambiamos el texto progresivamente para que el usuario sepa
+      // que sigue trabajando y no piense que se atascó.
+      const tip6 = setTimeout(() => {
+        const el = document.querySelector('#step-offers .step-text');
+        if (el) el.textContent = 'Consultando la CNMC (puede tardar)...';
       }, 6000);
+      const tip15 = setTimeout(() => {
+        const el = document.querySelector('#step-offers .step-text');
+        if (el) el.textContent = 'La CNMC está respondiendo lento, sigue trabajando...';
+      }, 15000);
+      const tip30 = setTimeout(() => {
+        const el = document.querySelector('#step-offers .step-text');
+        if (el) el.textContent = 'Casi listo, no cierres la pestaña...';
+      }, 30000);
       let offers;
       let apiError = null;
       try {
@@ -664,7 +673,9 @@
         console.error('CNMC API failed:', e);
         apiError = e;
       } finally {
-        clearTimeout(slowTip);
+        clearTimeout(tip6);
+        clearTimeout(tip15);
+        clearTimeout(tip30);
       }
 
       if (apiError || !offers || !offers.resultadoComparador || offers.resultadoComparador.length === 0) {
