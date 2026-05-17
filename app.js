@@ -1599,14 +1599,20 @@
     // Feature tags for best offer
     document.getElementById('result-best-features').innerHTML = buildFeatureTags(results.best);
 
-    // Link a búsqueda Google con el nombre exacto de la tarifa, para que el
-    // usuario pueda verificar en la web de la comercializadora si hay
-    // promociones extra no reflejadas en CNMC.
+    // Link a la web oficial de la comercializadora (BBDD interna). Si no la
+    // tenemos catalogada, fallback a Google search con el nombre exacto.
+    const bestUrl = getCompanyUrl(results.best.company, results.best.offerName);
     const linkEl = document.getElementById('result-best-link');
     if (linkEl) {
-      const q = encodeURIComponent(`${results.best.company} ${results.best.offerName || ''} tarifa luz`);
-      linkEl.href = `https://www.google.com/search?q=${q}`;
+      linkEl.href = bestUrl;
       linkEl.textContent = `Ver tarifa en ${results.best.company} →`;
+    }
+    // CTA paralelo en "Cómo cambiar de comercializadora"
+    const howtoLinkEl = document.getElementById('howto-cta-link');
+    if (howtoLinkEl) {
+      howtoLinkEl.href = bestUrl;
+      const txt = howtoLinkEl.querySelector('.howto-cta-text');
+      if (txt) txt.textContent = `Cambiar a ${results.best.company}`;
     }
 
     // === Renderizar por caso primario ===
@@ -1763,6 +1769,58 @@
     }
 
     return parts.join(' ');
+  }
+
+  // --- BBDD de URLs oficiales por comercializadora ---
+  // Mapping comercializadora → página oficial de tarifas. Las claves son
+  // substring que se buscan en el nombre (case-insensitive). Si no hay match,
+  // se cae a búsqueda de Google con el nombre + tarifa.
+  // Revisar URLs cada 6 meses por si cambian.
+  const COMPANY_WEBSITES = {
+    'IBERDROLA':         'https://www.iberdrola.es/luz/planes-luz',
+    'ENDESA':            'https://www.endesa.com/es/luz/tarifas-luz',
+    'NATURGY':           'https://www.naturgy.es/hogar/luz/tarifa_luz',
+    'REPSOL':            'https://www.repsol.es/particulares/luz-y-gas/tarifas-luz-gas/',
+    'HOLALUZ':           'https://www.holaluz.com/luz',
+    'TOTAL':             'https://www.totalenergies.es/clientes-particulares/luz',
+    'OCTOPUS':           'https://octopusenergy.es/tarifas-luz',
+    'IMAGINA':           'https://www.imaginaenergia.com/luz/tarifas',
+    'LUCERA':            'https://lucera.es',
+    'PLENITUDE':         'https://www.eniplenitude.com/es-es/luz',
+    'EDP':               'https://www.edpenergia.es/es/hogares/tu-tarifa-luz/',
+    'ACCIONA':           'https://www.acciona-energia.com/clientes-particulares/tarifas-luz/',
+    'ENERGYA VM':        'https://www.energyavm.es/particulares/tarifas-electricidad/',
+    'ENERGYA':           'https://www.energyavm.es/particulares/tarifas-electricidad/',
+    'GANA ENERGÍA':      'https://ganaenergia.com/tarifas-luz/',
+    'GANA ENERGIA':      'https://ganaenergia.com/tarifas-luz/',
+    'AURA ENERGIA':      'https://www.aura-energia.com/tarifas-luz/',
+    'AURA ENERGÍA':      'https://www.aura-energia.com/tarifas-luz/',
+    'PEPENERGY':         'https://www.pepenergy.com/luz',
+    'GANA':              'https://ganaenergia.com/tarifas-luz/',
+    'CEPSA':             'https://www.cepsa.es/es/particulares/casa/luz',
+    'AXPO':              'https://www.axpo.com/es/es/empresa/luz',
+    'PLÉNITUDE':         'https://www.eniplenitude.com/es-es/luz',
+    'AUDAX':             'https://www.audaxrenovables.com/particulares/',
+    'GAOLANIA':          'https://www.gaolania.com/',
+    'ENERGYASSET':       'https://www.energyasset.es/',
+    'VISALIA':           'https://www.visaliaenergia.com/',
+    'DOMÉSTICA':         'https://www.visaliaenergia.com/',
+    'DOMESTICA':         'https://www.visaliaenergia.com/',
+  };
+
+  function getCompanyUrl(companyName, offerName) {
+    if (!companyName) {
+      return `https://www.google.com/search?q=${encodeURIComponent('tarifa luz España')}`;
+    }
+    const upper = companyName.toUpperCase();
+    // Buscar coincidencia (longest match first para evitar matches parciales erróneos)
+    const keys = Object.keys(COMPANY_WEBSITES).sort((a, b) => b.length - a.length);
+    for (const key of keys) {
+      if (upper.includes(key)) return COMPANY_WEBSITES[key];
+    }
+    // Fallback Google
+    const q = encodeURIComponent(`${companyName} ${offerName || ''} tarifa luz`);
+    return `https://www.google.com/search?q=${q}`;
   }
 
   // --- Glosario de términos técnicos + sistema de tooltips ---
