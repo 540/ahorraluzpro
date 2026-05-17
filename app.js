@@ -27,6 +27,12 @@
   document.getElementById('btn-restart').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-retry').addEventListener('click', startScanner);
 
+  // Debug hook: en localhost exponemos processQR para que el script
+  // scripts/verify-prepush.js pueda reproducir el flow sin pasar por la cámara.
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') {
+    window.__ahorraluzDebug = { processQR };
+  }
+
   // --- Landing mockup carousel (vistosidad de portada) ---
   // Casos reales/representativos que rotan en la card de la landing.
   const MOCKUP_CASES = [
@@ -478,23 +484,43 @@
   // For local dev: use direct URL (works without Origin from file://)
   const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
+  const PROXY_TIMEOUT_MS = 4500;
+  const DIRECT_TIMEOUT_MS = 12000;
+
+  // Fetch con timeout via AbortController. Si el endpoint no responde en
+  // `ms` cancelamos para no quedar colgados en el paso intermedio.
+  async function fetchWithTimeout(url, ms, init = {}) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      return await fetch(url, { ...init, signal: ctrl.signal });
+    } finally {
+      clearTimeout(t);
+    }
+  }
 
   async function fetchFromApi(path) {
-    // Try proxy first, fall back to direct
+    // 1) Proxy de Cloudflare (necesario en producción por CORS).
+    //    Timeout corto: si el worker está caído, no merece esperar.
     try {
-      const response = await fetch(`${PROXY_BASE}${path}`, {
-        headers: { 'Accept': 'application/json' },
-      });
+      const response = await fetchWithTimeout(
+        `${PROXY_BASE}${path}`,
+        PROXY_TIMEOUT_MS,
+        { headers: { 'Accept': 'application/json' } }
+      );
       if (response.ok) return response;
+      console.warn('Proxy returned', response.status, '— probando directo');
     } catch (e) {
-      console.warn('Proxy failed, trying direct:', e.message);
+      console.warn('Proxy failed (', e.name, '):', e.message, '— probando directo');
     }
 
-    // Direct fallback (works from same-origin or curl, not from cross-origin browser)
-    const response = await fetch(`${CNMC_DIRECT}${path}`, {
-      headers: { 'Accept': 'application/json' },
-    });
-    return response;
+    // 2) Directo: funciona desde localhost/file:// y curl. En producción
+    //    cross-origin probablemente devuelva 403 por el Origin header.
+    return await fetchWithTimeout(
+      `${CNMC_DIRECT}${path}`,
+      DIRECT_TIMEOUT_MS,
+      { headers: { 'Accept': 'application/json' } }
+    );
   }
 
   async function fetchOffers(params) {
@@ -609,7 +635,7 @@
             potencia: cnmcParams.potencia,
             tarifa: cnmcParams.tarifa,
             ofertasRecibidas: offers ? (offers.resultadoComparador || []).length : 0,
-            url: `${CNMC_API_BASE}ofertas/electricidad`,
+            url: `${CNMC_DIRECT}ofertas/electricidad`,
           }
         );
         return;
