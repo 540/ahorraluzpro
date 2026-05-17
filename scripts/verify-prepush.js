@@ -73,6 +73,8 @@ async function populateResultMock(page) {
   await page.evaluate(() => {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-result').classList.add('active');
+
+    // Hero + comparativa
     document.getElementById('savings-hero-label').textContent = 'Ahorro disponible';
     document.getElementById('savings-hero-amount').textContent = '99,00 €/año';
     document.getElementById('savings-hero-sub').innerHTML = 'cambiando a <strong>Imagina Energía</strong>';
@@ -85,6 +87,36 @@ async function populateResultMock(page) {
     document.getElementById('result-best-tariff').textContent = 'Plan Base Noche y FINDES';
     document.getElementById('result-best-amount').textContent = '491 €/año';
     document.getElementById('result-best-monthly').textContent = '40,90 €/mes';
+
+    // Puntos clave (mock)
+    const puntos = [
+      { type: 'warn', text: 'Tu pico (3,73 kW) supera la potencia contratada (3 kW)' },
+      { type: 'good', text: 'Pasa a 100% energía renovable' },
+      { type: 'good', text: 'Sin permanencia' },
+      { type: 'tip',  text: 'Podrías tener derecho al bono social (25-40% descuento)' },
+      { type: 'good', text: 'Misma potencia, sin cambios técnicos' },
+    ];
+    const ICONS = { good: '✓', warn: '⚠', tip: '💡', info: 'ℹ' };
+    document.getElementById('puntos-clave-list').innerHTML = puntos.map(p =>
+      `<li class="punto punto-${p.type}"><span class="punto-icon">${ICONS[p.type]}</span><span class="punto-text">${p.text}</span></li>`
+    ).join('');
+
+    // Tabla "Tu nuevo contrato" (nueva, 3 cols)
+    document.getElementById('contract-actual-company').textContent = 'Octopus Energy España';
+    document.getElementById('contract-nuevo-company').textContent = 'Imagina Energía';
+    document.getElementById('chip-actual-tipo').textContent = 'PVPC / Fijo';
+    document.getElementById('chip-nuevo-tipo').textContent = 'Precio fijo';
+    document.getElementById('chip-actual-potencia').textContent = '3,00 kW';
+    document.getElementById('chip-nuevo-potencia').textContent = '3,00 kW';
+    document.getElementById('chip-actual-permanencia').textContent = 'Sin permanencia';
+    document.getElementById('chip-nuevo-permanencia').textContent = 'Sin permanencia';
+    document.getElementById('chip-actual-origen').textContent = 'Mix nacional';
+    document.getElementById('chip-nuevo-origen').textContent = '100% renovable';
+    document.getElementById('chip-actual-pago').textContent = '590 €/año';
+    document.getElementById('chip-nuevo-pago').textContent = '491 €/año';
+    document.getElementById('contract-row-origen').classList.add('contract-row-good');
+    document.getElementById('contract-row-pago').classList.add('contract-row-good');
+
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     document.querySelectorAll('.collapsible-section').forEach(d => { d.open = isDesktop; });
   });

@@ -1143,6 +1143,7 @@
   }
 
   // --- Render "Tu nuevo contrato": chips comparativa + tabla avanzada ---
+  // === Tabla "Tu nuevo contrato": 3 columnas (atributo / actual / propuesto) ===
   function renderContractComparison(results, qrData, scenario) {
     if (!results || !results.best) {
       document.getElementById('section-contract').style.display = 'none';
@@ -1150,86 +1151,75 @@
     }
     document.getElementById('section-contract').style.display = '';
 
-    // Título adaptado según escenario
     const titleEl = document.getElementById('contract-section-title');
     if (scenario.primaryCase === 'rank-1' || scenario.primaryCase === 'rank-top3') {
-      titleEl.textContent = 'Tu contrato actual vs la competencia';
+      titleEl.textContent = 'Tu contrato vs la competencia';
     } else {
-      titleEl.textContent = 'Tu nuevo contrato propuesto';
+      titleEl.textContent = 'Tu nuevo contrato';
     }
 
-    // Tipo de mercado actual
-    const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
+    // === Headers ===
+    document.getElementById('contract-actual-company').textContent = results.current.company;
+    document.getElementById('contract-nuevo-company').textContent = results.best.company;
+
+    // === Datos del contrato actual ===
     const tipoActualLabel = qrData.tipoContrato === 2 ? 'Indexado'
       : qrData.tipoContrato === 1 ? 'Fijo no estándar'
       : 'PVPC / Fijo';
-
-    // Comercializadora actual
-    document.getElementById('contract-actual-company').textContent = results.current.company;
-    document.getElementById('chip-actual-tipo').textContent = tipoActualLabel;
-    const potActualStr = qrData.potenciaP1
-      ? `${qrData.potenciaP1.toFixed(2)} kW`
-      : '—';
-    document.getElementById('chip-actual-potencia').textContent = potActualStr;
-    // Permanencia actual
+    const potActualStr = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
     let permActualStr = 'Sin permanencia';
     if (qrData.finPenalizacion) {
       const finPen = new Date(qrData.finPenalizacion);
       if (!isNaN(finPen) && finPen > new Date()) {
-        permActualStr = `Activa hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
+        permActualStr = `Hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
       }
     }
+    document.getElementById('chip-actual-tipo').textContent = tipoActualLabel;
+    document.getElementById('chip-actual-potencia').textContent = potActualStr;
     document.getElementById('chip-actual-permanencia').textContent = permActualStr;
     document.getElementById('chip-actual-origen').textContent = 'Mix nacional';
     document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
 
-    // === Propuesta ===
+    // === Datos del contrato propuesto ===
     const best = results.best;
-    document.getElementById('contract-nuevo-company').textContent = best.company;
-    // Tipo: la API no especifica claramente, asumimos "Precio fijo" para ofertas de mercado libre
-    document.getElementById('chip-nuevo-tipo').textContent = 'Precio fijo';
-    // Potencia: por defecto mantiene la actual; si hay recomendación de bajar la mostramos
     const pot = scenario.modifiers.potOverdimensioned;
-    if (pot) {
-      document.getElementById('chip-nuevo-potencia').textContent = `${pot.sugerida.toFixed(1)} kW (recomendado)`;
-      setBadge('chip-nuevo-potencia-badge', 'good', `-${(pot.actual - pot.sugerida).toFixed(2)} kW`);
-    } else {
-      document.getElementById('chip-nuevo-potencia').textContent = potActualStr;
-      setBadge('chip-nuevo-potencia-badge', 'neutral', 'Sin cambios');
-    }
-    // Permanencia nueva
-    const permNueva = best.hasPenalty ? '12 meses' : 'Sin permanencia';
-    document.getElementById('chip-nuevo-permanencia').textContent = permNueva;
-    if (best.hasPenalty && permActualStr === 'Sin permanencia') {
-      setBadge('chip-nuevo-permanencia-badge', 'warn', 'Atención');
-    } else if (!best.hasPenalty && permActualStr !== 'Sin permanencia') {
-      setBadge('chip-nuevo-permanencia-badge', 'good', 'Más libertad');
-    } else {
-      setBadge('chip-nuevo-permanencia-badge', 'neutral', 'Igual');
-    }
-    // Origen
-    const origenNuevo = best.isGreen ? '100% renovable' : 'Mix nacional';
-    document.getElementById('chip-nuevo-origen').textContent = origenNuevo;
-    if (best.isGreen) setBadge('chip-nuevo-origen-badge', 'good', 'Mejora');
-    else setBadge('chip-nuevo-origen-badge', 'neutral', 'Igual');
-    // Pago
+    const tipoNuevoLabel = 'Precio fijo';
+    const potNuevoStr = pot
+      ? `${pot.sugerida.toFixed(1)} kW`
+      : potActualStr;
+    const permNuevoStr = best.hasPenalty ? '12 meses' : 'Sin permanencia';
+    const origenNuevoStr = best.isGreen ? '100% renovable' : 'Mix nacional';
+    document.getElementById('chip-nuevo-tipo').textContent = tipoNuevoLabel;
+    document.getElementById('chip-nuevo-potencia').textContent = potNuevoStr;
+    document.getElementById('chip-nuevo-permanencia').textContent = permNuevoStr;
+    document.getElementById('chip-nuevo-origen').textContent = origenNuevoStr;
     document.getElementById('chip-nuevo-pago').textContent = `${formatCurrency(best.amount)}/año`;
+
+    // === Marcar filas según cambian (verde/amarillo/neutral) ===
+    function classify(rowId, kind) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      row.classList.remove('contract-row-good', 'contract-row-warn', 'contract-row-same');
+      if (kind) row.classList.add('contract-row-' + kind);
+    }
+    // Tipo: si cambia a precio fijo y antes era indexado → bueno; sin cambio → same
+    classify('contract-row-tipo', tipoActualLabel === tipoNuevoLabel ? 'same'
+      : qrData.tipoContrato === 2 ? 'good' : null);
+    // Potencia: cambia a sugerida → good; sin cambio → same
+    classify('contract-row-potencia', pot ? 'good' : 'same');
+    // Permanencia: gana libertad → good; pierde libertad → warn; igual → same
+    if (best.hasPenalty && permActualStr === 'Sin permanencia') classify('contract-row-permanencia', 'warn');
+    else if (!best.hasPenalty && permActualStr !== 'Sin permanencia') classify('contract-row-permanencia', 'good');
+    else classify('contract-row-permanencia', 'same');
+    // Origen: verde nueva → good
+    classify('contract-row-origen', best.isGreen ? 'good' : 'same');
+    // Pago: ahorro → good; igual → same; más caro → warn
     const diff = results.current.amount - best.amount;
-    if (diff > 0) setBadge('chip-nuevo-pago-badge', 'good', `-${formatCurrency(diff)}/año`);
-    else if (diff < 0) setBadge('chip-nuevo-pago-badge', 'warn', `+${formatCurrency(-diff)}/año`);
-    else setBadge('chip-nuevo-pago-badge', 'neutral', 'Igual');
+    classify('contract-row-pago', diff > 0 ? 'good' : (diff < 0 ? 'warn' : 'same'));
 
-    // Marcar chips que cambian con clase "chip-changed"
-    markChangedChips({
-      tipo: tipoActualLabel !== 'Precio fijo',
-      potencia: !!pot,
-      permanencia: permActualStr !== permNueva,
-      origen: !best.isGreen ? false : true,  // si la nueva es verde y la actual no
-      pago: diff !== 0
-    });
-
-    // === Tabla avanzada ===
+    // === Tabla técnica avanzada (dentro de "Nuestro análisis") ===
     const tarifaAcceso = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
+    const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
     document.getElementById('adv-actual-tarifa').textContent = tarifaAcceso;
     document.getElementById('adv-nuevo-tarifa').textContent = tarifaAcceso;
     document.getElementById('adv-actual-pot-p1').textContent = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
@@ -1246,7 +1236,6 @@
     document.getElementById('adv-nuevo-origen').textContent = best.isGreen ? '100% renovable certificado' : 'Mix nacional';
     document.getElementById('adv-actual-coste').textContent = `${formatCurrency(results.current.amount)}/año`;
     document.getElementById('adv-nuevo-coste').textContent = `${formatCurrency(best.amount)}/año`;
-    // Coste medio €/kWh
     const consumoTotal = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0) + (qrData.consumoAnualP3 || 0);
     if (consumoTotal > 0) {
       document.getElementById('adv-actual-kwh').textContent = `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`;
@@ -1254,121 +1243,136 @@
     }
   }
 
-  function setBadge(elId, kind, text) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.textContent = text;
-    el.className = 'chip-badge chip-badge-' + kind;
-  }
-
-  function markChangedChips(flags) {
-    const map = {
-      tipo: 'chip-nuevo-tipo-wrap',
-      potencia: 'chip-nuevo-potencia-wrap',
-      permanencia: 'chip-nuevo-permanencia-wrap',
-      origen: 'chip-nuevo-origen-wrap',
-      pago: 'chip-nuevo-pago-wrap',
-    };
-    Object.entries(flags).forEach(([k, changed]) => {
-      const el = document.getElementById(map[k]);
-      if (el) el.classList.toggle('chip-changed', !!changed);
-    });
-  }
-
-  // --- Render banners contextuales según modifiers del escenario ---
-  function renderModifierBanners(scenario, qrData, results) {
+  // === "Puntos clave": bullets compactos derivados de los modifiers ===
+  // Cada modifier aplicable se traduce en una línea con tipo (good/warn/tip/info)
+  // y prioridad para ordenarlos. Los 5 primeros se muestran; el resto va a un
+  // "Ver más" desplegable.
+  function buildPuntosClave(scenario, results, qrData) {
     const m = scenario.modifiers || {};
-    // Helper para mostrar/ocultar
-    const show = (id, visible) => {
-      const el = document.getElementById(id);
-      if (el) el.hidden = !visible;
-    };
+    const best = results && results.best;
+    const puntos = [];
 
-    // Permanencia activa
+    if (m.sameCompanyBest && results && results.savings > 0) {
+      puntos.push({ type: 'good', priority: 1,
+        text: `No cambias de compañía, solo de tarifa (${best.company})` });
+    }
+
     if (m.userHasPermanencia) {
-      show('banner-permanencia-activa', true);
       const p = m.userHasPermanencia;
-      document.getElementById('banner-pen-fecha').textContent = p.fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-      document.getElementById('banner-pen-dias').textContent = p.dias;
-      document.getElementById('banner-pen-coste').textContent = formatCurrency(p.penalizacionEstim);
-      const reco = document.getElementById('banner-pen-recomendacion');
-      if (p.compensaCambiar) {
-        reco.textContent = 'Aun pagando la penalización, el ahorro acumulado hasta esa fecha supera el coste — te compensa cambiar ya.';
-      } else if (results && results.savings > 0) {
-        reco.textContent = 'Te recomendamos esperar a que termine tu permanencia para cambiar sin coste adicional.';
-      } else {
-        reco.textContent = '';
-      }
-    } else {
-      show('banner-permanencia-activa', false);
+      const recomendacion = p.compensaCambiar
+        ? 'aun así te compensa cambiar ya'
+        : 'te conviene esperar';
+      puntos.push({ type: 'warn', priority: 1,
+        text: `Tu permanencia acaba en ${p.dias} días (penalización ~${formatCurrency(p.penalizacionEstim)} — ${recomendacion})` });
     }
 
-    // Potencia sobredimensionada (acción prioritaria)
-    if (m.potOverdimensioned) {
-      const p = m.potOverdimensioned;
-      show('banner-potencia-baja', true);
-      document.getElementById('banner-pot-pico').textContent = `${p.pmax.toFixed(2)} kW`;
-      document.getElementById('banner-pot-actual').textContent = `${p.actual.toFixed(2)} kW`;
-      document.getElementById('banner-pot-sugerida').textContent = `${p.sugerida.toFixed(1)} kW`;
-      document.getElementById('banner-pot-ahorro').textContent = `~${formatCurrency(p.ahorroEstim)}`;
-    } else {
-      show('banner-potencia-baja', false);
-    }
-
-    // Potencia al límite
     if (m.potUnderdimensioned) {
-      show('banner-potencia-alta', true);
-      document.getElementById('banner-pot-alta-pico').textContent = `${m.potUnderdimensioned.pmax.toFixed(2)} kW`;
-    } else {
-      show('banner-potencia-alta', false);
+      const pu = m.potUnderdimensioned;
+      puntos.push({ type: 'warn', priority: 2,
+        text: `Tu pico (${pu.pmax.toFixed(2)} kW) supera la potencia contratada (${pu.actual} kW)` });
+    } else if (m.potOverdimensioned) {
+      const po = m.potOverdimensioned;
+      puntos.push({ type: 'tip', priority: 2,
+        text: `Bajar la potencia a ${po.sugerida.toFixed(1)} kW ahorra ~${formatCurrency(po.ahorroEstim)} más al año` });
+    } else if (qrData.potenciaP1) {
+      puntos.push({ type: 'good', priority: 6,
+        text: 'Misma potencia, sin cambios técnicos' });
     }
 
-    // Misma comercializadora
-    if (m.sameCompanyBest && results && results.best && results.savings > 0) {
-      show('banner-misma-comp', true);
-      document.getElementById('banner-misma-comp-name').textContent = results.best.company;
-    } else {
-      show('banner-misma-comp', false);
+    if (best && best.hasPenalty) {
+      puntos.push({ type: 'warn', priority: 3,
+        text: 'Aceptas 12 meses de permanencia con la nueva tarifa' });
+    } else if (best) {
+      puntos.push({ type: 'good', priority: 4,
+        text: 'Sin permanencia' });
     }
 
-    // Bono social
-    show('banner-bono-social', !!m.bonoSocialEligible);
+    if (best && best.isGreen) {
+      puntos.push({ type: 'good', priority: 5,
+        text: 'Pasa a 100% energía renovable' });
+    }
 
-    // Autoconsumo
+    if (m.bonoSocialEligible) {
+      puntos.push({ type: 'tip', priority: 3,
+        text: 'Podrías tener derecho al bono social (25-40% descuento)' });
+    }
+
     if (m.hasAutoconsumo) {
-      show('banner-autoconsumo', true);
-      document.getElementById('banner-exc-valor').textContent = formatCurrency(m.hasAutoconsumo);
-    } else {
-      show('banner-autoconsumo', false);
+      puntos.push({ type: 'info', priority: 4,
+        text: `Tienes autoconsumo: asegúrate de elegir una comercializadora que compense excedentes` });
     }
 
-    // Factura antigua
     if (m.oldInvoice) {
-      show('banner-factura-antigua', true);
-      document.getElementById('banner-factura-meses').textContent = `${m.oldInvoice} meses`;
-    } else {
-      show('banner-factura-antigua', false);
+      puntos.push({ type: 'warn', priority: 3,
+        text: `Factura de hace ${m.oldInvoice} meses — los precios pueden haber cambiado` });
     }
 
-    // Regularización
-    show('banner-regularizacion', !!m.isRegularizacion);
+    if (m.isRegularizacion) {
+      puntos.push({ type: 'warn', priority: 3,
+        text: 'Factura de regularización — datos pueden no reflejar tu consumo normal' });
+    }
 
-    // Contrato indexado
-    show('banner-indexado', !!m.contratoIndexado);
+    if (m.contratoIndexado) {
+      puntos.push({ type: 'info', priority: 5,
+        text: 'Tu contrato actual es indexado: tu factura varía con el mercado mayorista' });
+    }
 
-    // Perfil EV / mucho valle
     if (m.veryHighValle) {
-      show('banner-perfil-ev', true);
-      document.getElementById('banner-valle-pct').textContent = `${m.veryHighValle}%`;
-    } else {
-      show('banner-perfil-ev', false);
+      puntos.push({ type: 'tip', priority: 4,
+        text: `Consumes ${m.veryHighValle}% en valle: tarifas para vehículo eléctrico te interesan` });
     }
 
-    // 3.0TD
-    show('banner-3-0-td', !!m.is30TD);
+    if (m.similarTop3) {
+      puntos.push({ type: 'info', priority: 5,
+        text: 'Top 3 ofertas casi iguales: elige por features (verde, sin permanencia)' });
+    }
 
-    // Top 3 similares
-    show('banner-similar-top3', !!m.similarTop3);
+    if (m.is30TD) {
+      puntos.push({ type: 'info', priority: 6,
+        text: 'Tarifa 3.0TD (pequeño comercio): las comparativas son orientativas' });
+    }
+
+    puntos.sort((a, b) => a.priority - b.priority);
+    return puntos;
+  }
+
+  function renderPuntosClave(scenario, qrData, results) {
+    const section = document.getElementById('section-puntos-clave');
+    if (!section) return;
+    const puntos = buildPuntosClave(scenario, results, qrData);
+    if (puntos.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+    const ICONS = { good: '✓', warn: '⚠', tip: '💡', info: 'ℹ' };
+    const renderItem = p => `<li class="punto punto-${p.type}"><span class="punto-icon" aria-hidden="true">${ICONS[p.type] || '·'}</span><span class="punto-text">${p.text}</span></li>`;
+
+    const VISIBLE_LIMIT = 5;
+    const visible = puntos.slice(0, VISIBLE_LIMIT);
+    const extra = puntos.slice(VISIBLE_LIMIT);
+    document.getElementById('puntos-clave-list').innerHTML = visible.map(renderItem).join('');
+    const moreWrap = document.getElementById('puntos-clave-more-wrap');
+    if (extra.length > 0) {
+      moreWrap.hidden = false;
+      document.getElementById('puntos-clave-hidden').innerHTML = extra.map(renderItem).join('');
+      const btn = document.getElementById('puntos-clave-show-more');
+      const txt = btn.querySelector('.show-more-text');
+      txt.textContent = `Ver ${extra.length} más`;
+      btn.setAttribute('aria-expanded', 'false');
+      document.getElementById('puntos-clave-hidden').hidden = true;
+      // Single click handler (no acumular)
+      btn.onclick = () => {
+        const hidden = document.getElementById('puntos-clave-hidden');
+        const open = hidden.hidden === false;
+        hidden.hidden = open;
+        btn.setAttribute('aria-expanded', String(!open));
+        txt.textContent = open ? `Ver ${extra.length} más` : 'Ocultar';
+        btn.classList.toggle('open', !open);
+      };
+    } else {
+      moreWrap.hidden = true;
+    }
   }
 
   // --- Build feature tags HTML ---
@@ -1606,9 +1610,9 @@
     const disclaimer = document.querySelector('.result-disclaimer p');
     disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no est\u00e1 afiliado con ninguna comercializadora.`;
 
-    // Renderizar "Tu nuevo contrato" + banners contextuales
+    // Renderizar "Tu nuevo contrato" + Puntos clave
     renderContractComparison(results, qrData, scenario);
-    renderModifierBanners(scenario, qrData, results);
+    renderPuntosClave(scenario, qrData, results);
 
     // En desktop, abrir las secciones desplegables automáticamente
     applyCollapsibleDefaults();
