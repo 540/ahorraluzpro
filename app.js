@@ -487,14 +487,18 @@
   // For local dev: use direct URL (works without Origin from file://)
   const PROXY_BASE = 'https://rough-sun-c2a5.iker-267.workers.dev/api/publico/';
   const CNMC_DIRECT = 'https://comparador.cnmc.gob.es/api/publico/';
-  // Subido a 12s para tolerar cold start del worker (~1-3s) + latencia
-  // de CNMC (puede llegar a 7-8s en el endpoint /ofertas/electricidad).
-  const PROXY_TIMEOUT_MS = 12000;
-  const DIRECT_TIMEOUT_MS = 12000;
+  // 20s para tolerar cold start del worker (~3s peor caso) + latencia
+  // del endpoint CNMC /ofertas/electricidad (medido: hasta 8s).
+  // Vimos que ~12s no alcanzaba en cold start + CNMC lento.
+  const PROXY_TIMEOUT_MS = 20000;
+  const DIRECT_TIMEOUT_MS = 15000;
 
-  // Warm-up del worker: una petición ligera al endpoint /health del proxy
-  // para que el worker arranque mientras el usuario está en la pantalla
-  // del scanner. Reduce el primer fetch real en 1-3s (cold start).
+  // Diagnóstico del último intento — lo expone showError para que en
+  // caso de fallo sepamos qué pasó realmente con el proxy.
+  let lastApiDiag = null;
+
+  // Warm-up del worker: petición ligera a /health para arrancarlo en
+  // background mientras el usuario está en el scanner.
   function warmupProxy() {
     fetch(PROXY_BASE.replace(/\/api\/publico\/$/, '/health'), {
       cache: 'no-store',
@@ -514,27 +518,44 @@
   }
 
   async function fetchFromApi(path) {
+    const diag = { proxy: null, direct: null, startedAt: Date.now() };
+
     // 1) Proxy de Cloudflare (necesario en producción por CORS).
-    //    Timeout corto: si el worker está caído, no merece esperar.
+    const tProxy = Date.now();
     try {
       const response = await fetchWithTimeout(
         `${PROXY_BASE}${path}`,
         PROXY_TIMEOUT_MS,
         { headers: { 'Accept': 'application/json' } }
       );
-      if (response.ok) return response;
-      console.warn('Proxy returned', response.status, '— probando directo');
+      diag.proxy = { status: response.status, ms: Date.now() - tProxy };
+      if (response.ok) {
+        lastApiDiag = diag;
+        return response;
+      }
+      console.warn(`Proxy ${response.status} en ${diag.proxy.ms}ms — fallback al directo`);
     } catch (e) {
-      console.warn('Proxy failed (', e.name, '):', e.message, '— probando directo');
+      diag.proxy = { error: e.name + ': ' + e.message, ms: Date.now() - tProxy };
+      console.warn(`Proxy ${e.name} en ${diag.proxy.ms}ms (${e.message}) — fallback al directo`);
     }
 
     // 2) Directo: funciona desde localhost/file:// y curl. En producción
     //    cross-origin probablemente devuelva 403 por el Origin header.
-    return await fetchWithTimeout(
-      `${CNMC_DIRECT}${path}`,
-      DIRECT_TIMEOUT_MS,
-      { headers: { 'Accept': 'application/json' } }
-    );
+    const tDirect = Date.now();
+    try {
+      const response = await fetchWithTimeout(
+        `${CNMC_DIRECT}${path}`,
+        DIRECT_TIMEOUT_MS,
+        { headers: { 'Accept': 'application/json' } }
+      );
+      diag.direct = { status: response.status, ms: Date.now() - tDirect };
+      lastApiDiag = diag;
+      return response;
+    } catch (e) {
+      diag.direct = { error: e.name + ': ' + e.message, ms: Date.now() - tDirect };
+      lastApiDiag = diag;
+      throw e;
+    }
   }
 
   async function fetchOffers(params) {
@@ -644,12 +665,12 @@
           `${reason}. Puedes consultar directamente el comparador oficial de la CNMC escaneando el QR con la c\u00e1mara de tu m\u00f3vil (sin usar esta app) o visitando comparador.cnmc.gob.es.`,
           {
             error: apiError ? apiError.message : 'Sin ofertas en la respuesta',
+            apiDiag: lastApiDiag,
             codigoPostal: cnmcParams.codigoPostal,
             consumoAnualE: cnmcParams.consumoAnualE,
             potencia: cnmcParams.potencia,
             tarifa: cnmcParams.tarifa,
             ofertasRecibidas: offers ? (offers.resultadoComparador || []).length : 0,
-            url: `${CNMC_DIRECT}ofertas/electricidad`,
           }
         );
         return;
