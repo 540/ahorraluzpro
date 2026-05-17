@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260518c">
+  <link rel="stylesheet" href="styles.css?v=20260518d">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -389,7 +389,15 @@
             <span class="result-best-offer-name" id="result-best-offer-name"></span>
             <div class="result-best-features" id="result-best-features"></div>
             <div class="result-savings" id="result-savings">&mdash;</div>
+            <a href="#" id="result-best-link" class="result-best-link" target="_blank" rel="noopener noreferrer">
+              Ver tarifa en la web de la comercializadora &rarr;
+            </a>
           </div>
+          <p class="result-best-note">
+            Mostramos precios oficiales seg&uacute;n la CNMC. Algunas comercializadoras tienen
+            ofertas adicionales en su web (descuentos promocionales) que pueden no estar aqu&iacute;
+            reflejadas. <strong>Verifica en su web antes de contratar.</strong>
+          </p>
 
           <div class="alt-section-title" id="alt-header">Tambi&eacute;n podr&iacute;as considerar</div>
           <div class="alt-grid">
@@ -479,11 +487,11 @@
               <div class="bill-section-title">Desglose de tu &uacute;ltima factura</div>
               <div class="bill-breakdown" id="bill-breakdown">
                 <div class="bill-row">
-                  <span>Potencia</span>
+                  <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de potencia</span><button type="button" class="glossary-icon" data-term="termino-potencia" aria-label="Qu&eacute; es el t&eacute;rmino de potencia">?</button></span>
                   <span id="bill-potencia">&mdash;</span>
                 </div>
                 <div class="bill-row">
-                  <span>Energ&iacute;a</span>
+                  <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de energ&iacute;a</span><button type="button" class="glossary-icon" data-term="termino-energia" aria-label="Qu&eacute; es el t&eacute;rmino de energ&iacute;a">?</button></span>
                   <span id="bill-energia">&mdash;</span>
                 </div>
                 <div class="bill-row">
@@ -515,7 +523,7 @@
             </ul>
           </div>
         </div>
-        <button id="btn-restart" class="btn-secondary">Escanear otra factura</button>
+        <button id="btn-restart" class="btn-primary">Escanear otra factura</button>
       </div>
 
       <div class="result-disclaimer">
@@ -539,6 +547,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260518c"></script>
+  <script src="app.js?v=20260518d"></script>
 </body>
 </html>

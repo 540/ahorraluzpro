@@ -2094,6 +2094,192 @@ html, body {
 }
 
 /* ===================================================================
+   GLOSARIO: términos técnicos con icono ? + popover
+   =================================================================== */
+.glossary-term {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.glossary-text {
+  /* Subrayado punteado discreto para indicar que es un término con info */
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.2);
+  cursor: help;
+}
+
+.glossary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all var(--transition-fast);
+  vertical-align: middle;
+}
+
+.glossary-icon:hover,
+.glossary-icon:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle);
+  outline: none;
+}
+
+/* Popover flotante */
+.glossary-popover {
+  position: absolute;
+  z-index: 9999;
+  max-width: 320px;
+  min-width: 240px;
+  padding: 14px 16px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 212, 170, 0.1);
+  animation: glossary-fade 180ms ease-out;
+}
+
+.glossary-popover[hidden] { display: none; }
+
+.glossary-popover-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.glossary-popover-close:hover { color: var(--text); }
+
+.glossary-popover-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 28px 6px 0;
+}
+
+.glossary-popover-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+@keyframes glossary-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: popover ocupa más ancho */
+@media (max-width: 480px) {
+  .glossary-popover {
+    max-width: calc(100vw - 32px);
+    min-width: 0;
+  }
+}
+
+/* ===================================================================
+   DESCUENTO BIENVENIDA: badges para mostrar "1er año" vs "luego"
+   =================================================================== */
+.contract-discount-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.contract-discount-after {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.comparison-badge-discount {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 5px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
+}
+
+.comparison-aftermath {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ===================================================================
+   LINK A WEB COMERCIALIZADORA + DISCLAIMER CNMC
+   =================================================================== */
+.result-best-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border-accent);
+  border-radius: 100px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.result-best-link:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+}
+
+.result-best-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-left: 2px solid var(--text-muted);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.result-best-note strong { color: var(--text-secondary); }
+
+/* ===================================================================
    PUNTOS CLAVE — bullets compactos que sustituyen los banners
    =================================================================== */
 .puntos-clave-list {

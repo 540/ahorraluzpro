@@ -822,8 +822,11 @@
 
     // Sort by second year cost (more representative than promo first year)
     const sorted = offers
-      .filter(o => o.importeSegundoAnio != null && o.importeSegundoAnio > 0)
-      .sort((a, b) => a.importeSegundoAnio - b.importeSegundoAnio);
+      // Ordenamos por importe del PRIMER año (con descuento de bienvenida si lo hay).
+      // Filosofía: la app empuja al usuario al precio más barato hoy; si caduca el
+      // descuento al año, se puede volver a comparar y cambiar otra vez.
+      .filter(o => o.importePrimerAnio != null && o.importePrimerAnio > 0)
+      .sort((a, b) => a.importePrimerAnio - b.importePrimerAnio);
 
     if (sorted.length === 0) {
       return { current: { company: companyName, amount: currentAnnualCost }, best: null, alternatives: [], savings: 0, totalOffers: 0, alreadyBest: false, currentCompanyOffers: [] };
@@ -852,8 +855,13 @@
       return {
         company: cleanCompanyName(o.comercializadora || ''),
         offerName: o.oferta || '',
-        amount: o.importeSegundoAnio,
-        firstYearAmount: o.importePrimerAnio,
+        // amount = importe del primer año (con descuento si lo hay).
+        // secondYearAmount = importe estable a partir del 2º año.
+        // Si difieren, hay descuento de bienvenida.
+        amount: o.importePrimerAnio,
+        secondYearAmount: o.importeSegundoAnio,
+        hasDiscount: o.importePrimerAnio < o.importeSegundoAnio,
+        discountAmount: Math.max(0, o.importeSegundoAnio - o.importePrimerAnio),
         hasPenalty: o.penalizacion,
         isGreen: o.verde,
       };
@@ -866,7 +874,7 @@
       },
       best: mapOffer(best),
       alternatives: [alt1, alt2].filter(Boolean).map(mapOffer),
-      savings: currentAnnualCost - best.importeSegundoAnio,
+      savings: currentAnnualCost - best.importePrimerAnio,
       totalOffers: sorted.length,
       alreadyBest: alreadyBest,
       currentCompanyBest: bestCurrentOffer ? mapOffer(bestCurrentOffer) : null,
@@ -1105,13 +1113,13 @@
       const pctPunta = cP1 / totalConsumo;
       const pctLlano = cP2 / totalConsumo;
       if (pctValle >= 0.45) {
-        tarValEl.textContent = 'Discriminación horaria';
+        tarValEl.innerHTML = glossaryTerm('discriminacion-horaria', 'Discriminación horaria');
         tarDetEl.innerHTML = `Consumes <strong>${Math.round(pctValle * 100)}%</strong> en valle. Tarifas con descuento nocturno te beneficiarán más.`;
       } else if (pctPunta >= 0.45) {
         tarValEl.textContent = 'Tarifa plana';
         tarDetEl.innerHTML = `Tu consumo en punta es alto (<strong>${Math.round(pctPunta * 100)}%</strong>). Una tarifa fija sin discriminación suele convenirte.`;
       } else {
-        tarValEl.textContent = '2.0TD estándar';
+        tarValEl.innerHTML = glossaryTerm('2.0td', '2.0TD estándar');
         tarDetEl.innerHTML = `Consumo equilibrado (P:${Math.round(pctPunta*100)}% L:${Math.round(pctLlano*100)}% V:${Math.round(pctValle*100)}%). La 2.0TD genérica te funciona bien.`;
       }
     } else {
@@ -1163,6 +1171,9 @@
     document.getElementById('contract-nuevo-company').textContent = results.best.company;
 
     // === Datos del contrato actual ===
+    const tipoActualKey = qrData.tipoContrato === 2 ? 'indexado'
+      : qrData.tipoContrato === 1 ? 'precio-fijo'
+      : 'pvpc';
     const tipoActualLabel = qrData.tipoContrato === 2 ? 'Indexado'
       : qrData.tipoContrato === 1 ? 'Fijo no estándar'
       : 'PVPC / Fijo';
@@ -1174,26 +1185,37 @@
         permActualStr = `Hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
       }
     }
-    document.getElementById('chip-actual-tipo').textContent = tipoActualLabel;
-    document.getElementById('chip-actual-potencia').textContent = potActualStr;
-    document.getElementById('chip-actual-permanencia').textContent = permActualStr;
-    document.getElementById('chip-actual-origen').textContent = 'Mix nacional';
+    // Insertamos tooltips solo en la fila ACTUAL (no duplicar en propuesto, ya está claro)
+    document.getElementById('chip-actual-tipo').innerHTML = glossaryTerm(tipoActualKey, tipoActualLabel);
+    document.getElementById('chip-actual-potencia').innerHTML = glossaryTerm('potencia', potActualStr);
+    document.getElementById('chip-actual-permanencia').innerHTML = glossaryTerm('permanencia', permActualStr);
+    document.getElementById('chip-actual-origen').innerHTML = glossaryTerm('mix-nacional', 'Mix nacional');
     document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
 
     // === Datos del contrato propuesto ===
     const best = results.best;
     const pot = scenario.modifiers.potOverdimensioned;
-    const tipoNuevoLabel = 'Precio fijo';
     const potNuevoStr = pot
       ? `${pot.sugerida.toFixed(1)} kW`
       : potActualStr;
     const permNuevoStr = best.hasPenalty ? '12 meses' : 'Sin permanencia';
     const origenNuevoStr = best.isGreen ? '100% renovable' : 'Mix nacional';
-    document.getElementById('chip-nuevo-tipo').textContent = tipoNuevoLabel;
+    document.getElementById('chip-nuevo-tipo').innerHTML = glossaryTerm('precio-fijo', 'Precio fijo');
     document.getElementById('chip-nuevo-potencia').textContent = potNuevoStr;
     document.getElementById('chip-nuevo-permanencia').textContent = permNuevoStr;
-    document.getElementById('chip-nuevo-origen').textContent = origenNuevoStr;
-    document.getElementById('chip-nuevo-pago').textContent = `${formatCurrency(best.amount)}/año`;
+    document.getElementById('chip-nuevo-origen').innerHTML = best.isGreen
+      ? glossaryTerm('100-renovable', '100% renovable')
+      : 'Mix nacional';
+    // Pago propuesto: si hay descuento de bienvenida, mostrar ambos años
+    document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
+    const pagoEl = document.getElementById('chip-nuevo-pago');
+    if (best.hasDiscount) {
+      pagoEl.innerHTML = `${formatCurrency(best.amount)}/año <span class="contract-discount-tag">1er año</span>` +
+        `<span class="contract-discount-after">luego ${formatCurrency(best.secondYearAmount)}/año</span>`;
+    } else {
+      pagoEl.textContent = `${formatCurrency(best.amount)}/año`;
+    }
+    const tipoNuevoLabel = 'Precio fijo';
 
     // === Marcar filas según cambian (verde/amarillo/neutral) ===
     function classify(rowId, kind) {
@@ -1218,10 +1240,11 @@
     classify('contract-row-pago', diff > 0 ? 'good' : (diff < 0 ? 'warn' : 'same'));
 
     // === Tabla técnica avanzada (dentro de "Nuestro análisis") ===
-    const tarifaAcceso = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
+    const tarifaAccesoKey = qrData.peaje === 19 ? '3.0td' : '2.0td';
+    const tarifaAccesoLabel = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
     const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
-    document.getElementById('adv-actual-tarifa').textContent = tarifaAcceso;
-    document.getElementById('adv-nuevo-tarifa').textContent = tarifaAcceso;
+    document.getElementById('adv-actual-tarifa').innerHTML = glossaryTerm(tarifaAccesoKey, tarifaAccesoLabel);
+    document.getElementById('adv-nuevo-tarifa').textContent = tarifaAccesoLabel;
     document.getElementById('adv-actual-pot-p1').textContent = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
     document.getElementById('adv-actual-pot-p2').textContent = qrData.potenciaP2 ? `${qrData.potenciaP2.toFixed(2)} kW` : '—';
     const potP1Nueva = pot ? pot.sugerida : qrData.potenciaP1;
@@ -1255,6 +1278,15 @@
     if (m.sameCompanyBest && results && results.savings > 0) {
       puntos.push({ type: 'good', priority: 1,
         text: `No cambias de compañía, solo de tarifa (${best.company})` });
+    }
+
+    // Descuento de bienvenida significativo (≥10% el primer año)
+    if (best && best.hasDiscount && best.discountAmount > 0) {
+      const pct = Math.round((best.discountAmount / best.secondYearAmount) * 100);
+      if (pct >= 10) {
+        puntos.push({ type: 'tip', priority: 2,
+          text: `Descuento de bienvenida: ahorras ${formatCurrency(best.discountAmount)} extra el primer año (${pct}% sobre la tarifa estable)` });
+      }
     }
 
     if (m.userHasPermanencia) {
@@ -1538,7 +1570,14 @@
     const bestTariffEl = document.getElementById('result-best-tariff');
     if (bestTariffEl) bestTariffEl.textContent = results.best.offerName || '';
     document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-    document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
+    if (results.best.hasDiscount) {
+      // Hay descuento de bienvenida: amount es del 1er año, mostrar "luego" debajo
+      document.getElementById('result-best-monthly').innerHTML =
+        `${formatCurrency(results.best.amount / 12)}/mes <span class="comparison-badge-discount" title="Descuento de bienvenida el primer año">1er año</span>` +
+        `<br><span class="comparison-aftermath">luego ${formatCurrency(results.best.secondYearAmount)}/año</span>`;
+    } else {
+      document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
+    }
 
     const bestHeader = document.getElementById('best-header');
     const bestBadge = document.getElementById('result-badge');
@@ -1559,6 +1598,16 @@
 
     // Feature tags for best offer
     document.getElementById('result-best-features').innerHTML = buildFeatureTags(results.best);
+
+    // Link a búsqueda Google con el nombre exacto de la tarifa, para que el
+    // usuario pueda verificar en la web de la comercializadora si hay
+    // promociones extra no reflejadas en CNMC.
+    const linkEl = document.getElementById('result-best-link');
+    if (linkEl) {
+      const q = encodeURIComponent(`${results.best.company} ${results.best.offerName || ''} tarifa luz`);
+      linkEl.href = `https://www.google.com/search?q=${q}`;
+      linkEl.textContent = `Ver tarifa en ${results.best.company} →`;
+    }
 
     // === Renderizar por caso primario ===
     switch (scenario.primaryCase) {
@@ -1715,6 +1764,155 @@
 
     return parts.join(' ');
   }
+
+  // --- Glosario de términos técnicos + sistema de tooltips ---
+  // Cada término aparece en pantalla con un icono "?" al lado. Al clicarlo,
+  // muestra un popover con la explicación. Click fuera o ESC lo cierra.
+  const GLOSSARY = {
+    'pvpc': {
+      label: 'PVPC',
+      text: 'Precio Voluntario al Pequeño Consumidor. Tarifa regulada del Estado: el precio del kWh varía cada hora según el mercado mayorista. Sin permanencia ni compromiso, pero la factura cambia mes a mes.'
+    },
+    'precio-fijo': {
+      label: 'Precio fijo',
+      text: 'Tarifa del mercado libre con el precio del kWh cerrado durante meses (normalmente 12). Más estable que PVPC, pero suele ser un poco más caro de media.'
+    },
+    'indexado': {
+      label: 'Indexado',
+      text: 'Tarifa cuyo precio varía con el mercado mayorista (similar a PVPC pero con un margen extra de la comercializadora). Más riesgo si los precios suben.'
+    },
+    '2.0td': {
+      label: '2.0TD',
+      text: 'Tarifa de acceso (peaje) para suministros residenciales y pequeño comercio con potencia ≤15 kW. Es la parte regulada del precio, igual para todas las comercializadoras.'
+    },
+    '3.0td': {
+      label: '3.0TD',
+      text: 'Tarifa de acceso para potencias >15 kW (pequeño comercio, oficinas). Tiene 6 periodos horarios distintos en lugar de 3.'
+    },
+    'potencia': {
+      label: 'Potencia contratada',
+      text: 'Los kW máximos que puedes consumir simultáneamente. Pagas un coste fijo mensual por tenerla disponible (~38€/kW al año), la uses o no. Si pasas del límite, salta el ICP.'
+    },
+    'permanencia': {
+      label: 'Permanencia',
+      text: 'Compromiso de mantener el contrato un tiempo (normalmente 12 meses). Salir antes implica penalización, típicamente el 5% del consumo pendiente hasta el fin del contrato.'
+    },
+    'punta-llano-valle': {
+      label: 'Punta, Llano y Valle',
+      text: 'Franjas horarias con distinto precio en la tarifa 2.0TD: Punta (10-14h y 18-22h en días laborables, las más caras), Llano (8-10h, 14-18h y 22-24h L-V), Valle (0-8h L-V y todo el fin de semana y festivos, las más baratas).'
+    },
+    'bono-social': {
+      label: 'Bono social',
+      text: 'Descuento del 25-40% sobre la factura que aplica el Estado a hogares vulnerables (rentas bajas, familias numerosas, pensionistas mínimos, etc.). Lo gestionan las comercializadoras de referencia.'
+    },
+    'mix-nacional': {
+      label: 'Mix nacional',
+      text: 'Origen no certificado de la energía. Significa que la electricidad proviene de la mezcla del sistema eléctrico español: gas natural, nuclear, eólica, hidráulica, solar, etc.'
+    },
+    '100-renovable': {
+      label: '100% renovable',
+      text: 'Energía con Garantía de Origen renovable certificada por la CNMC. No emite CO₂ y procede de fuentes como eólica, solar, hidráulica o biomasa.'
+    },
+    'termino-potencia': {
+      label: 'Término de potencia',
+      text: 'Lo que pagas por tener la luz disponible, aunque no la uses. Se calcula multiplicando los kW contratados por un precio regulado (~38€/kW/año).'
+    },
+    'termino-energia': {
+      label: 'Término de energía',
+      text: 'Lo que pagas por cada kWh consumido. Es la parte de la factura que varía según cuánto uses, y donde más se diferencian las comercializadoras.'
+    },
+    'cups': {
+      label: 'CUPS',
+      text: 'Código Universal del Punto de Suministro. Identifica de forma única tu enchufe (22 caracteres, empieza por ES). Lo encuentras en cualquier factura. Es lo único que necesitas para cambiar de comercializadora.'
+    },
+    'autoconsumo': {
+      label: 'Autoconsumo / Excedentes',
+      text: 'Si tienes paneles solares y produces más energía de la que gastas, el sobrante se vierte a la red. La comercializadora te lo compensa descontando una cantidad de tu factura.'
+    },
+    'discriminacion-horaria': {
+      label: 'Discriminación horaria',
+      text: 'Tarifa cuyo precio del kWh cambia entre franjas Punta/Llano/Valle. Te premia consumir en horas baratas (noches, fines de semana).'
+    },
+    'descuento-bienvenida': {
+      label: 'Descuento de bienvenida',
+      text: 'Reducción del precio durante los primeros 12 meses de contrato. Al cumplir el año, el precio vuelve al tarifario base. Cambiar de tarifa o de comercializadora cada año puede mantenerte siempre con descuento.'
+    },
+  };
+
+  // Inserta el HTML de un término con icono ? clickable.
+  // Uso: glossaryTerm('pvpc') → "<span class='glossary-term'>PVPC <button>?</button></span>"
+  // O: glossaryTerm('pvpc', 'PVPC / Fijo') → mismo pero con texto custom
+  function glossaryTerm(key, displayText) {
+    const g = GLOSSARY[key];
+    if (!g) return displayText || key;
+    const label = displayText || g.label;
+    return `<span class="glossary-term"><span class="glossary-text">${label}</span>` +
+           `<button type="button" class="glossary-icon" data-term="${key}" aria-label="Qué es ${g.label}">?</button></span>`;
+  }
+
+  // Popover único reutilizable
+  let glossaryPopover = null;
+  function ensureGlossaryPopover() {
+    if (glossaryPopover) return glossaryPopover;
+    glossaryPopover = document.createElement('div');
+    glossaryPopover.className = 'glossary-popover';
+    glossaryPopover.setAttribute('role', 'tooltip');
+    glossaryPopover.hidden = true;
+    glossaryPopover.innerHTML = `
+      <button type="button" class="glossary-popover-close" aria-label="Cerrar">×</button>
+      <h4 class="glossary-popover-title"></h4>
+      <p class="glossary-popover-text"></p>
+    `;
+    document.body.appendChild(glossaryPopover);
+    glossaryPopover.querySelector('.glossary-popover-close').addEventListener('click', closeGlossary);
+    return glossaryPopover;
+  }
+
+  function showGlossary(termKey, anchorEl) {
+    const g = GLOSSARY[termKey];
+    if (!g) return;
+    const pop = ensureGlossaryPopover();
+    pop.querySelector('.glossary-popover-title').textContent = g.label;
+    pop.querySelector('.glossary-popover-text').textContent = g.text;
+    pop.hidden = false;
+
+    // Posicionar bajo el anchor, ajustado a viewport
+    const rect = anchorEl.getBoundingClientRect();
+    const popRect = pop.getBoundingClientRect();
+    const margin = 8;
+    let top = rect.bottom + window.scrollY + margin;
+    let left = rect.left + window.scrollX + (rect.width / 2) - (popRect.width / 2);
+    const maxLeft = window.scrollX + window.innerWidth - popRect.width - margin;
+    if (left < window.scrollX + margin) left = window.scrollX + margin;
+    if (left > maxLeft) left = maxLeft;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    pop.dataset.openFor = termKey;
+  }
+
+  function closeGlossary() {
+    if (glossaryPopover) glossaryPopover.hidden = true;
+  }
+
+  // Listener delegado para todos los iconos del glosario
+  document.addEventListener('click', e => {
+    const icon = e.target.closest('.glossary-icon');
+    if (icon) {
+      e.stopPropagation();
+      const key = icon.getAttribute('data-term');
+      const currentKey = glossaryPopover && !glossaryPopover.hidden ? glossaryPopover.dataset.openFor : null;
+      if (currentKey === key) { closeGlossary(); return; }
+      showGlossary(key, icon);
+      return;
+    }
+    // Click fuera del popover lo cierra
+    if (glossaryPopover && !glossaryPopover.hidden && !e.target.closest('.glossary-popover')) {
+      closeGlossary();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeGlossary();
+  });
 
   // --- Help toggles ---
   document.addEventListener('click', function (e) {
