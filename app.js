@@ -1146,7 +1146,11 @@
     }
 
     if (qrData.importeTotal > 0) {
-      document.getElementById('bill-total').textContent = `${qrData.importeTotal.toFixed(2)} \u20AC`;
+      const totalStr = `${qrData.importeTotal.toFixed(2)} \u20AC`;
+      setText('bill-total', totalStr);
+      setText('user-bill-total-kpi', totalStr);
+    } else {
+      setText('user-bill-total-kpi', '\u2014');
     }
   }
 
@@ -1488,14 +1492,22 @@
       const chip = e.target.closest('.filter-chip');
       if (chip) applyFilter(chip.dataset.filter);
     };
-    // Swipe en mobile
-    const viewport = document.querySelector('.carousel-viewport');
-    if (viewport) {
-      let startX = 0;
-      viewport.ontouchstart = e => { startX = e.touches[0].clientX; };
-      viewport.ontouchend = e => {
+    // Swipe en mobile (sobre toda la sección de comparación)
+    const swipeArea = document.querySelector('.offers-compare');
+    if (swipeArea) {
+      let startX = 0, startY = 0;
+      swipeArea.ontouchstart = e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      };
+      swipeArea.ontouchend = e => {
         const dx = e.changedTouches[0].clientX - startX;
-        if (Math.abs(dx) > 40) navigateCarousel(dx < 0 ? 1 : -1);
+        const dy = e.changedTouches[0].clientY - startY;
+        // Solo cuenta como swipe horizontal si predomina X sobre Y (evita
+        // confundirse con scroll vertical de la página).
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+          navigateCarousel(dx < 0 ? 1 : -1);
+        }
       };
     }
     // Keyboard

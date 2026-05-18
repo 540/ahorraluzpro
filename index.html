@@ -23,7 +23,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260519c">
+  <link rel="stylesheet" href="styles.css?v=20260519d">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -301,48 +301,50 @@
           <h3>Nuestro an&aacute;lisis</h3>
           <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
         </summary>
-        <div class="collapsible-content">
-          <!-- Puntos clave (al inicio del análisis) -->
-          <div class="puntos-clave-wrap">
-        <div class="section-header">
-          <h3>Puntos clave</h3>
-        </div>
-        <ul class="puntos-clave-list" id="puntos-clave-list"></ul>
-        <div class="puntos-clave-more-wrap" id="puntos-clave-more-wrap" hidden>
-          <button type="button" class="puntos-clave-show-more" id="puntos-clave-show-more" aria-expanded="false">
-            <span class="show-more-text">Ver m&aacute;s</span>
-            <span class="show-more-chevron" aria-hidden="true">&#9662;</span>
-          </button>
-          <ul class="puntos-clave-list puntos-clave-extra" id="puntos-clave-hidden" hidden></ul>
-        </div>
-      
-          </div>
+        <div class="collapsible-content analisis-content">
 
-          <div class="insight-card" id="insight-card">
-            <span class="insight-label">Diagn&oacute;stico personalizado</span>
+          <!-- 1. Diagnóstico personalizado (arriba, destacado) -->
+          <div class="analisis-diagnostic">
+            <span class="analisis-section-label">Diagn&oacute;stico</span>
             <p id="insight-text">&mdash;</p>
           </div>
 
-          <div class="reco-grid">
-            <div class="reco-card" id="reco-tarifa-card">
-              <div class="reco-icon" aria-hidden="true">&#x1F4CA;</div>
-              <div class="reco-body">
-                <div class="reco-label">Tipo de tarifa &oacute;ptima para tu perfil</div>
-                <div class="reco-value" id="reco-tarifa-value">&mdash;</div>
-                <div class="reco-detail" id="reco-tarifa-detail">&mdash;</div>
-              </div>
+          <!-- 2. Hallazgos principales (puntos clave) -->
+          <div class="analisis-findings puntos-clave-wrap">
+            <span class="analisis-section-label">Hallazgos principales</span>
+            <ul class="puntos-clave-list" id="puntos-clave-list"></ul>
+            <div class="puntos-clave-more-wrap" id="puntos-clave-more-wrap" hidden>
+              <button type="button" class="puntos-clave-show-more" id="puntos-clave-show-more" aria-expanded="false">
+                <span class="show-more-text">Ver m&aacute;s</span>
+                <span class="show-more-chevron" aria-hidden="true">&#9662;</span>
+              </button>
+              <ul class="puntos-clave-list puntos-clave-extra" id="puntos-clave-hidden" hidden></ul>
             </div>
-            <div class="reco-card" id="reco-coste-card">
-              <div class="reco-icon" aria-hidden="true">&#x1F4B0;</div>
-              <div class="reco-body">
-                <div class="reco-label">Tu coste real por kWh</div>
-                <div class="reco-value" id="reco-coste-value">&mdash;</div>
-                <div class="reco-detail" id="reco-coste-detail">&mdash;</div>
+          </div>
+
+          <!-- 3. Métricas de tu perfil (las 2 cards) -->
+          <div class="analisis-metrics">
+            <span class="analisis-section-label">M&eacute;tricas de tu perfil</span>
+            <div class="reco-grid">
+              <div class="reco-card" id="reco-tarifa-card">
+                <div class="reco-icon" aria-hidden="true">&#x1F4CA;</div>
+                <div class="reco-body">
+                  <div class="reco-label">Tipo de tarifa &oacute;ptima</div>
+                  <div class="reco-value" id="reco-tarifa-value">&mdash;</div>
+                  <div class="reco-detail" id="reco-tarifa-detail">&mdash;</div>
+                </div>
+              </div>
+              <div class="reco-card" id="reco-coste-card">
+                <div class="reco-icon" aria-hidden="true">&#x1F4B0;</div>
+                <div class="reco-body">
+                  <div class="reco-label">Tu coste real por kWh</div>
+                  <div class="reco-value" id="reco-coste-value">&mdash;</div>
+                  <div class="reco-detail" id="reco-coste-detail">&mdash;</div>
+                </div>
               </div>
             </div>
           </div>
 
-          
         </div>
       </details>
 
@@ -352,71 +354,101 @@
           <h3>Tu perfil de gasto</h3>
           <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
         </summary>
-        <div class="collapsible-content">
-          <div class="detail-grid">
-            <div class="profile-card">
-              <div class="profile-company">
-                <span class="profile-company-name" id="user-comercializadora">&mdash;</span>
-                <span class="profile-contract" id="user-tipo-contrato">&mdash;</span>
+        <div class="collapsible-content perfil-content">
+
+          <!-- 1. KPIs hero: 3 números grandes lado a lado -->
+          <div class="perfil-kpis">
+            <div class="perfil-kpi">
+              <span class="perfil-kpi-value" id="user-consumo-total">&mdash;</span>
+              <span class="perfil-kpi-label">consumo anual</span>
+            </div>
+            <div class="perfil-kpi-divider" aria-hidden="true"></div>
+            <div class="perfil-kpi">
+              <span class="perfil-kpi-value" id="user-potencia">&mdash;</span>
+              <span class="perfil-kpi-label">potencia contratada</span>
+            </div>
+            <div class="perfil-kpi-divider" aria-hidden="true"></div>
+            <div class="perfil-kpi">
+              <span class="perfil-kpi-value" id="user-bill-total-kpi">&mdash;</span>
+              <span class="perfil-kpi-label">&uacute;ltima factura</span>
+            </div>
+          </div>
+
+          <!-- Compañía + periodo + tipo de contrato (info contextual) -->
+          <div class="perfil-context">
+            <div class="perfil-context-item">
+              <span class="perfil-context-label">Comercializadora</span>
+              <span class="perfil-context-value" id="user-comercializadora">&mdash;</span>
+            </div>
+            <div class="perfil-context-item">
+              <span class="perfil-context-label">Tipo de contrato</span>
+              <span class="perfil-context-value" id="user-tipo-contrato">&mdash;</span>
+            </div>
+            <div class="perfil-context-item">
+              <span class="perfil-context-label">Periodo analizado</span>
+              <span class="perfil-context-value" id="user-periodo">&mdash;</span>
+            </div>
+          </div>
+
+          <!-- 2. Distribución por franjas horarias (barras P/L/V) -->
+          <div class="perfil-section">
+            <div class="perfil-section-head">
+              <span class="analisis-section-label">Distribuci&oacute;n por franjas</span>
+              <button class="help-toggle" data-help="help-consumo" aria-label="Ayuda">?</button>
+            </div>
+            <div class="help-text" id="help-consumo">
+              <p><strong>Punta</strong> (horas caras: ma&ntilde;ana y tarde L-V), <strong>Llano</strong> (intermedias) y <strong>Valle</strong> (noches, fines de semana y festivos, las m&aacute;s baratas).</p>
+            </div>
+            <div class="profile-bars">
+              <div class="bar-group">
+                <div class="bar-meta">
+                  <span class="bar-label"><span class="bar-label-dot dot-punta"></span> Punta</span>
+                  <span class="bar-value" id="user-consumo-p1">&mdash;</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill bar-punta" id="bar-p1"></div></div>
               </div>
-              <div class="profile-total">
-                <span class="profile-total-value" id="user-consumo-total">&mdash;</span>
-                <span class="profile-total-label">consumo anual</span>
+              <div class="bar-group">
+                <div class="bar-meta">
+                  <span class="bar-label"><span class="bar-label-dot dot-llano"></span> Llano</span>
+                  <span class="bar-value" id="user-consumo-p2">&mdash;</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill bar-llano" id="bar-p2"></div></div>
               </div>
-              <div class="profile-bars">
-                <div class="bar-group">
-                  <div class="bar-meta">
-                    <span class="bar-label"><span class="bar-label-dot dot-punta"></span> Punta</span>
-                    <span class="bar-value" id="user-consumo-p1">&mdash;</span>
-                  </div>
-                  <div class="bar-track"><div class="bar-fill bar-punta" id="bar-p1"></div></div>
+              <div class="bar-group">
+                <div class="bar-meta">
+                  <span class="bar-label"><span class="bar-label-dot dot-valle"></span> Valle</span>
+                  <span class="bar-value" id="user-consumo-p3">&mdash;</span>
                 </div>
-                <div class="bar-group">
-                  <div class="bar-meta">
-                    <span class="bar-label"><span class="bar-label-dot dot-llano"></span> Llano</span>
-                    <span class="bar-value" id="user-consumo-p2">&mdash;</span>
-                  </div>
-                  <div class="bar-track"><div class="bar-fill bar-llano" id="bar-p2"></div></div>
-                </div>
-                <div class="bar-group">
-                  <div class="bar-meta">
-                    <span class="bar-label"><span class="bar-label-dot dot-valle"></span> Valle</span>
-                    <span class="bar-value" id="user-consumo-p3">&mdash;</span>
-                  </div>
-                  <div class="bar-track"><div class="bar-fill bar-valle" id="bar-p3"></div></div>
-                </div>
-              </div>
-              <div class="profile-details">
-                <div class="profile-detail">
-                  <span class="profile-detail-label">Potencia</span>
-                  <span class="profile-detail-value" id="user-potencia">&mdash;</span>
-                </div>
-                <div class="profile-detail">
-                  <span class="profile-detail-label">Periodo</span>
-                  <span class="profile-detail-value" id="user-periodo">&mdash;</span>
-                </div>
+                <div class="bar-track"><div class="bar-fill bar-valle" id="bar-p3"></div></div>
               </div>
             </div>
+          </div>
 
-            <div class="result-current">
-              <div class="bill-section-title">Desglose de tu &uacute;ltima factura</div>
-              <div class="bill-breakdown" id="bill-breakdown">
-                <div class="bill-row">
-                  <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de potencia</span><button type="button" class="glossary-icon" data-term="termino-potencia" aria-label="Qu&eacute; es el t&eacute;rmino de potencia">?</button></span>
-                  <span id="bill-potencia">&mdash;</span>
-                </div>
-                <div class="bill-row">
-                  <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de energ&iacute;a</span><button type="button" class="glossary-icon" data-term="termino-energia" aria-label="Qu&eacute; es el t&eacute;rmino de energ&iacute;a">?</button></span>
-                  <span id="bill-energia">&mdash;</span>
-                </div>
-                <div class="bill-row">
-                  <span>Impuestos y otros</span>
-                  <span id="bill-otros">&mdash;</span>
-                </div>
-                <div class="bill-row bill-row-total">
-                  <span>Total factura</span>
-                  <span id="bill-total">&mdash;</span>
-                </div>
+          <!-- 3. Desglose de la factura -->
+          <div class="perfil-section">
+            <div class="perfil-section-head">
+              <span class="analisis-section-label">Desglose de la &uacute;ltima factura</span>
+              <button class="help-toggle" data-help="help-tarifa" aria-label="Ayuda">?</button>
+            </div>
+            <div class="help-text" id="help-tarifa">
+              <p>Tu factura tiene dos partes: el <strong>t&eacute;rmino de potencia</strong> (pagas por tener la luz disponible, aunque no la uses) y el <strong>t&eacute;rmino de energ&iacute;a</strong> (pagas por cada kWh consumido). A eso se suman impuestos (~26%).</p>
+            </div>
+            <div class="bill-breakdown" id="bill-breakdown">
+              <div class="bill-row">
+                <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de potencia</span><button type="button" class="glossary-icon" data-term="termino-potencia" aria-label="Qu&eacute; es el t&eacute;rmino de potencia">?</button></span>
+                <span id="bill-potencia">&mdash;</span>
+              </div>
+              <div class="bill-row">
+                <span class="glossary-term"><span class="glossary-text">T&eacute;rmino de energ&iacute;a</span><button type="button" class="glossary-icon" data-term="termino-energia" aria-label="Qu&eacute; es el t&eacute;rmino de energ&iacute;a">?</button></span>
+                <span id="bill-energia">&mdash;</span>
+              </div>
+              <div class="bill-row">
+                <span>Impuestos y otros</span>
+                <span id="bill-otros">&mdash;</span>
+              </div>
+              <div class="bill-row bill-row-total">
+                <span>Total factura</span>
+                <span id="bill-total">&mdash;</span>
               </div>
             </div>
           </div>
@@ -514,6 +546,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260519c"></script>
+  <script src="app.js?v=20260519d"></script>
 </body>
 </html>

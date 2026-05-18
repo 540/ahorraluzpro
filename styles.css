@@ -2687,11 +2687,31 @@ html, body {
 }
 
 @media (max-width: 640px) {
-  /* Mobile: stack vertical (actual encima, propuesta debajo). Flechas ocultas. */
+  /* Mobile: mantener 2 cols lado a lado. Flechas ocultas, navegación
+     por swipe + dots. */
   .offers-compare {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 6px;
   }
+  .offers-current,
+  .offers-proposed-slide {
+    padding: 12px;
+    gap: 8px;
+  }
+  .offers-col-tag { font-size: 9px; }
+  .offers-col-company { font-size: 13px; line-height: 1.2; }
+  .offers-col-subtitle { font-size: 10px; }
+  .offers-col-key { font-size: 9px; }
+  .offers-col-value { font-size: 11px; }
+  .offers-col-row { min-height: 42px; padding: 6px 0; gap: 1px; }
+  .offers-col-row-total .offers-col-value { font-size: 13px; }
+  .slide-tags { gap: 4px; }
+  .slide-tag { font-size: 9px; padding: 2px 6px; }
+  .slide-savings-banner { padding: 10px 10px; gap: 8px; }
+  .slide-savings-icon { font-size: 16px; }
+  .slide-savings-amount { font-size: 14px; }
+  .slide-savings-detail { font-size: 10px; }
+  .slide-cta { font-size: 12px; padding: 10px 14px; }
   .carousel-arrow { display: none; }
   .offers-proposed-wrap { grid-template-columns: 1fr; }
 }
@@ -2705,6 +2725,193 @@ html, body {
   .offers-col-row { min-height: 52px; padding: 10px 0; }
   .offers-col-row-total .offers-col-value { font-size: 17px; }
   .carousel-arrow { width: 44px; height: 64px; }
+}
+
+/* ===================================================================
+   ANÁLISIS: layout coherente con jerarquía clara
+   =================================================================== */
+.analisis-content,
+.perfil-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analisis-section-label,
+.perfil-section .analisis-section-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* Diagnóstico: bloque destacado arriba con borde lateral verde */
+.analisis-diagnostic {
+  padding: 14px 16px;
+  background: var(--bg-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+.analisis-diagnostic .analisis-section-label {
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.analisis-diagnostic p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.analisis-diagnostic strong { color: var(--text); font-weight: 700; }
+
+/* Hallazgos: bullets más limpios sin parecer cards */
+.analisis-findings .puntos-clave-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.analisis-findings .punto {
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 0;
+  font-size: 13px;
+}
+.analisis-findings .punto-good { border-left-color: var(--savings); }
+.analisis-findings .punto-warn { border-left-color: #fbbf24; }
+.analisis-findings .punto-tip  { border-left-color: var(--accent); }
+.analisis-findings .punto-info { border-left-color: #60a5fa; }
+
+/* Métricas: 2 cards lado a lado */
+.analisis-metrics .reco-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .analisis-metrics .reco-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===================================================================
+   TU PERFIL DE GASTO: KPIs hero + secciones narrativas
+   =================================================================== */
+
+/* KPIs hero: 3 números grandes lado a lado */
+.perfil-kpis {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.perfil-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  min-width: 0;
+}
+
+.perfil-kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.perfil-kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.perfil-kpi-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+}
+
+/* Contexto: pares clave-valor en columnas */
+.perfil-context {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.perfil-context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perfil-context-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.perfil-context-value {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sección genérica del perfil (franjas o desglose) */
+.perfil-section { }
+.perfil-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .perfil-kpis {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+  .perfil-kpi-divider {
+    width: 60%;
+    height: 1px;
+    justify-self: center;
+  }
+  .perfil-kpi-value { font-size: 20px; }
+  .perfil-context {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .perfil-kpi-value { font-size: 26px; }
+  .perfil-kpis { padding: 22px 18px; }
 }
 
 /* ===================================================================
