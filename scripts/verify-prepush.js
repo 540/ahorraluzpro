@@ -101,21 +101,49 @@ async function populateResultMock(page) {
       `<li class="punto punto-${p.type}"><span class="punto-icon">${ICONS[p.type]}</span><span class="punto-text">${p.text}</span></li>`
     ).join('');
 
-    // Tabla "Tu nuevo contrato" (nueva, 3 cols)
-    document.getElementById('contract-actual-company').textContent = 'Octopus Energy España';
-    document.getElementById('contract-nuevo-company').textContent = 'Imagina Energía';
-    document.getElementById('chip-actual-tipo').textContent = 'PVPC / Fijo';
-    document.getElementById('chip-nuevo-tipo').textContent = 'Precio fijo';
-    document.getElementById('chip-actual-potencia').textContent = '3,00 kW';
-    document.getElementById('chip-nuevo-potencia').textContent = '3,00 kW';
-    document.getElementById('chip-actual-permanencia').textContent = 'Sin permanencia';
-    document.getElementById('chip-nuevo-permanencia').textContent = 'Sin permanencia';
-    document.getElementById('chip-actual-origen').textContent = 'Mix nacional';
-    document.getElementById('chip-nuevo-origen').textContent = '100% renovable';
-    document.getElementById('chip-actual-pago').textContent = '590 €/año';
-    document.getElementById('chip-nuevo-pago').textContent = '491 €/año';
-    document.getElementById('contract-row-origen').classList.add('contract-row-good');
-    document.getElementById('contract-row-pago').classList.add('contract-row-good');
+    // Mock del carrusel de ofertas (3 slides demo)
+    const cur = { company: 'Octopus Energy España', tipo: 'PVPC / Fijo', pot: '3,00 kW', perm: 'Sin permanencia', origen: 'Mix nacional', pago: 590 };
+    const offers = [
+      { rank: 1, company: 'Energya VM', name: 'Fórmula Fija 24h', amount: 460, second: 542, green: false, perm: false, discount: true },
+      { rank: 2, company: 'Imagina Energía', name: 'Plan Base Noche y FINDES', amount: 498, second: 498, green: true, perm: false, discount: false },
+      { rank: 3, company: 'Energyasset', name: 'Tarifa Precio por Periodo', amount: 498, second: 498, green: false, perm: false, discount: false },
+    ];
+    const fmt = v => v.toLocaleString('es-ES') + ' €';
+    document.getElementById('offers-user-rank').textContent = 'puesto ~27';
+    document.getElementById('offers-total-count').textContent = '105';
+    document.getElementById('offers-track').innerHTML = offers.map(o => {
+      const diff = cur.pago - o.amount;
+      const tags = [
+        o.green ? '<span class="slide-tag tag-green">🌿 100% verde</span>' : '',
+        o.perm ? '<span class="slide-tag tag-warn">12 meses</span>' : '<span class="slide-tag">🔒 Sin permanencia</span>',
+        diff > 0 ? `<span class="slide-diff good">−${fmt(diff)} ahorro</span>` : ''
+      ].filter(Boolean).join('');
+      const pagoNew = o.discount
+        ? `${fmt(o.amount)}/año <span class="contract-discount-tag">1er año</span><span class="contract-discount-after">luego ${fmt(o.second)}/año</span>`
+        : `${fmt(o.amount)}/año`;
+      return `<article class="carousel-slide">
+        <header class="slide-header">
+          <span class="slide-rank-badge ${o.rank===1?'star':''}">${o.rank===1?'★ #1':'#'+o.rank}</span>
+          <div class="slide-titles">
+            <div class="slide-company">${o.company}</div>
+            <div class="slide-offer-name">${o.name}</div>
+          </div>
+        </header>
+        <div class="slide-tags">${tags}</div>
+        <div class="slide-compare">
+          <div class="slide-compare-header"><span class="slide-compare-tag">Actual</span><span class="slide-compare-tag slide-compare-tag-new">Propuesta</span></div>
+          <div class="slide-row"><span class="slide-row-label">Empresa</span><span class="slide-row-current">${cur.company}</span><span class="slide-row-proposed">${o.company}</span></div>
+          <div class="slide-row"><span class="slide-row-label">Tipo</span><span class="slide-row-current">${cur.tipo}</span><span class="slide-row-proposed">Precio fijo</span></div>
+          <div class="slide-row"><span class="slide-row-label">Potencia</span><span class="slide-row-current">${cur.pot}</span><span class="slide-row-proposed">${cur.pot}</span></div>
+          <div class="slide-row"><span class="slide-row-label">Permanencia</span><span class="slide-row-current">${cur.perm}</span><span class="slide-row-proposed">${o.perm?'12 meses':'Sin permanencia'}</span></div>
+          <div class="slide-row ${o.green?'slide-row-good':''}"><span class="slide-row-label">Origen</span><span class="slide-row-current">${cur.origen}</span><span class="slide-row-proposed">${o.green?'100% renovable':'Mix nacional'}</span></div>
+          <div class="slide-row slide-row-total ${diff>0?'slide-row-good':''}"><span class="slide-row-label">Pago/año</span><span class="slide-row-current">${fmt(cur.pago)}/año</span><span class="slide-row-proposed">${pagoNew}</span></div>
+        </div>
+        <a href="#" class="slide-cta">Cambiar a ${o.company} →</a>
+      </article>`;
+    }).join('');
+    document.getElementById('offers-dots').innerHTML = offers.map((_,i)=>`<button class="carousel-dot ${i===0?'active':''}"></button>`).join('');
+    document.getElementById('offers-counter').textContent = '1 de ' + offers.length;
 
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     document.querySelectorAll('.collapsible-section').forEach(d => { d.open = isDesktop; });

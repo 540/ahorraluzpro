@@ -889,11 +889,15 @@
 
     const best = sorted[0];
 
-    // Build alternatives: top offers excluding the best
-    // If user already has a top offer, show the competition instead
-    const altCandidates = sorted.slice(1);
-    const alt1 = altCandidates[0] || null;
-    const alt2 = altCandidates[1] || null;
+    // Top 10 ofertas para el carrusel comparativo
+    const topOffers = sorted.slice(0, 10);
+
+    // Posición de la oferta actual del usuario en el ranking completo.
+    // No conocemos el nombre exacto de su tarifa, pero sí su coste anual;
+    // contamos cuántas ofertas son más baratas que él. +1 = su posición.
+    const userRankPosition = currentAnnualCost > 0
+      ? sorted.filter(o => o.importePrimerAnio < currentAnnualCost).length + 1
+      : null;
 
     function mapOffer(o) {
       return {
@@ -917,9 +921,14 @@
         amount: currentAnnualCost,
       },
       best: mapOffer(best),
-      alternatives: [alt1, alt2].filter(Boolean).map(mapOffer),
+      // top 10 ofertas para el carrusel
+      topOffers: topOffers.map(mapOffer),
+      // Mantenemos alternatives por retrocompatibilidad temporal (no se usa
+      // en el carrusel, pero algún render legacy puede consultar)
+      alternatives: [],
       savings: currentAnnualCost - best.importePrimerAnio,
       totalOffers: sorted.length,
+      userRankPosition: userRankPosition,
       alreadyBest: alreadyBest,
       currentCompanyBest: bestCurrentOffer ? mapOffer(bestCurrentOffer) : null,
       currentCompanyRank: bestCurrentOffer ? bestCurrentOffer.rank : null,
@@ -1194,120 +1203,276 @@
     }
   }
 
-  // --- Render "Tu nuevo contrato": chips comparativa + tabla avanzada ---
-  // === Tabla "Tu nuevo contrato": 3 columnas (atributo / actual / propuesto) ===
-  function renderContractComparison(results, qrData, scenario) {
-    if (!results || !results.best) {
-      document.getElementById('section-contract').style.display = 'none';
-      return;
-    }
-    document.getElementById('section-contract').style.display = '';
-
-    const titleEl = document.getElementById('contract-section-title');
-    if (scenario.primaryCase === 'rank-1' || scenario.primaryCase === 'rank-top3') {
-      titleEl.textContent = 'Tu contrato vs la competencia';
-    } else {
-      titleEl.textContent = 'Tu nuevo contrato';
-    }
-
-    // === Headers ===
-    document.getElementById('contract-actual-company').textContent = results.current.company;
-    document.getElementById('contract-nuevo-company').textContent = results.best.company;
-
-    // === Datos del contrato actual ===
-    const tipoActualKey = qrData.tipoContrato === 2 ? 'indexado'
+  // === Estado del usuario actual (para reusar en cada slide del carrusel) ===
+  function buildCurrentContractView(qrData, results) {
+    const tipoKey = qrData.tipoContrato === 2 ? 'indexado'
       : qrData.tipoContrato === 1 ? 'precio-fijo'
       : 'pvpc';
-    const tipoActualLabel = qrData.tipoContrato === 2 ? 'Indexado'
+    const tipoLabel = qrData.tipoContrato === 2 ? 'Indexado'
       : qrData.tipoContrato === 1 ? 'Fijo no estándar'
       : 'PVPC / Fijo';
-    const potActualStr = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
-    let permActualStr = 'Sin permanencia';
+    const potencia = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
+    let permanencia = 'Sin permanencia';
     if (qrData.finPenalizacion) {
       const finPen = new Date(qrData.finPenalizacion);
       if (!isNaN(finPen) && finPen > new Date()) {
-        permActualStr = `Hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
+        permanencia = `Hasta ${finPen.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
       }
     }
-    // Insertamos tooltips solo en la fila ACTUAL (no duplicar en propuesto, ya está claro)
-    document.getElementById('chip-actual-tipo').innerHTML = glossaryTerm(tipoActualKey, tipoActualLabel);
-    document.getElementById('chip-actual-potencia').innerHTML = glossaryTerm('potencia', potActualStr);
-    document.getElementById('chip-actual-permanencia').innerHTML = glossaryTerm('permanencia', permActualStr);
-    document.getElementById('chip-actual-origen').innerHTML = glossaryTerm('mix-nacional', 'Mix nacional');
-    document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
+    return {
+      company: results.current.company,
+      tipoKey, tipoLabel,
+      potencia,
+      permanencia,
+      origen: 'Mix nacional',
+      pago: results.current.amount,
+    };
+  }
 
-    // === Datos del contrato propuesto ===
+  // === Tabla técnica avanzada (vive en "Nuestro análisis", apunta a la mejor) ===
+  function renderAdvancedTable(results, qrData, scenario) {
+    if (!results || !results.best) return;
     const best = results.best;
-    const pot = scenario.modifiers.potOverdimensioned;
-    const potNuevoStr = pot
-      ? `${pot.sugerida.toFixed(1)} kW`
-      : potActualStr;
-    const permNuevoStr = best.hasPenalty ? '12 meses' : 'Sin permanencia';
-    const origenNuevoStr = best.isGreen ? '100% renovable' : 'Mix nacional';
-    document.getElementById('chip-nuevo-tipo').innerHTML = glossaryTerm('precio-fijo', 'Precio fijo');
-    document.getElementById('chip-nuevo-potencia').textContent = potNuevoStr;
-    document.getElementById('chip-nuevo-permanencia').textContent = permNuevoStr;
-    document.getElementById('chip-nuevo-origen').innerHTML = best.isGreen
-      ? glossaryTerm('100-renovable', '100% renovable')
-      : 'Mix nacional';
-    // Pago propuesto: si hay descuento de bienvenida, mostrar ambos años
-    document.getElementById('chip-actual-pago').textContent = `${formatCurrency(results.current.amount)}/año`;
-    const pagoEl = document.getElementById('chip-nuevo-pago');
-    if (best.hasDiscount) {
-      pagoEl.innerHTML = `${formatCurrency(best.amount)}/año <span class="contract-discount-tag">1er año</span>` +
-        `<span class="contract-discount-after">luego ${formatCurrency(best.secondYearAmount)}/año</span>`;
-    } else {
-      pagoEl.textContent = `${formatCurrency(best.amount)}/año`;
-    }
-    const tipoNuevoLabel = 'Precio fijo';
-
-    // === Marcar filas según cambian (verde/amarillo/neutral) ===
-    function classify(rowId, kind) {
-      const row = document.getElementById(rowId);
-      if (!row) return;
-      row.classList.remove('contract-row-good', 'contract-row-warn', 'contract-row-same');
-      if (kind) row.classList.add('contract-row-' + kind);
-    }
-    // Tipo: si cambia a precio fijo y antes era indexado → bueno; sin cambio → same
-    classify('contract-row-tipo', tipoActualLabel === tipoNuevoLabel ? 'same'
-      : qrData.tipoContrato === 2 ? 'good' : null);
-    // Potencia: cambia a sugerida → good; sin cambio → same
-    classify('contract-row-potencia', pot ? 'good' : 'same');
-    // Permanencia: gana libertad → good; pierde libertad → warn; igual → same
-    if (best.hasPenalty && permActualStr === 'Sin permanencia') classify('contract-row-permanencia', 'warn');
-    else if (!best.hasPenalty && permActualStr !== 'Sin permanencia') classify('contract-row-permanencia', 'good');
-    else classify('contract-row-permanencia', 'same');
-    // Origen: verde nueva → good
-    classify('contract-row-origen', best.isGreen ? 'good' : 'same');
-    // Pago: ahorro → good; igual → same; más caro → warn
-    const diff = results.current.amount - best.amount;
-    classify('contract-row-pago', diff > 0 ? 'good' : (diff < 0 ? 'warn' : 'same'));
-
-    // === Tabla técnica avanzada (dentro de "Nuestro análisis") ===
+    const cur = buildCurrentContractView(qrData, results);
+    const pot = (scenario.modifiers && scenario.modifiers.potOverdimensioned) || null;
     const tarifaAccesoKey = qrData.peaje === 19 ? '3.0td' : '2.0td';
     const tarifaAccesoLabel = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
     const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
-    document.getElementById('adv-actual-tarifa').innerHTML = glossaryTerm(tarifaAccesoKey, tarifaAccesoLabel);
-    document.getElementById('adv-nuevo-tarifa').textContent = tarifaAccesoLabel;
-    document.getElementById('adv-actual-pot-p1').textContent = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
-    document.getElementById('adv-actual-pot-p2').textContent = qrData.potenciaP2 ? `${qrData.potenciaP2.toFixed(2)} kW` : '—';
+    setHTML('adv-actual-tarifa', glossaryTerm(tarifaAccesoKey, tarifaAccesoLabel));
+    setText('adv-nuevo-tarifa', tarifaAccesoLabel);
+    setText('adv-actual-pot-p1', qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—');
+    setText('adv-actual-pot-p2', qrData.potenciaP2 ? `${qrData.potenciaP2.toFixed(2)} kW` : '—');
     const potP1Nueva = pot ? pot.sugerida : qrData.potenciaP1;
     const potP2Nueva = pot ? pot.sugerida : qrData.potenciaP2;
-    document.getElementById('adv-nuevo-pot-p1').textContent = potP1Nueva ? `${potP1Nueva.toFixed(2)} kW` : '—';
-    document.getElementById('adv-nuevo-pot-p2').textContent = potP2Nueva ? `${potP2Nueva.toFixed(2)} kW` : '—';
-    document.getElementById('adv-actual-tc').textContent = tiposContrato[qrData.tipoContrato] || '—';
-    document.getElementById('adv-nuevo-tc').textContent = 'Precio fijo (mercado libre)';
-    document.getElementById('adv-actual-perm').textContent = permActualStr;
-    document.getElementById('adv-nuevo-perm').textContent = best.hasPenalty ? '12 meses (estándar)' : 'Sin permanencia';
-    document.getElementById('adv-actual-origen').textContent = 'Mix nacional';
-    document.getElementById('adv-nuevo-origen').textContent = best.isGreen ? '100% renovable certificado' : 'Mix nacional';
-    document.getElementById('adv-actual-coste').textContent = `${formatCurrency(results.current.amount)}/año`;
-    document.getElementById('adv-nuevo-coste').textContent = `${formatCurrency(best.amount)}/año`;
+    setText('adv-nuevo-pot-p1', potP1Nueva ? `${potP1Nueva.toFixed(2)} kW` : '—');
+    setText('adv-nuevo-pot-p2', potP2Nueva ? `${potP2Nueva.toFixed(2)} kW` : '—');
+    setText('adv-actual-tc', tiposContrato[qrData.tipoContrato] || '—');
+    setText('adv-nuevo-tc', 'Precio fijo (mercado libre)');
+    setText('adv-actual-perm', cur.permanencia);
+    setText('adv-nuevo-perm', best.hasPenalty ? '12 meses (estándar)' : 'Sin permanencia');
+    setText('adv-actual-origen', 'Mix nacional');
+    setText('adv-nuevo-origen', best.isGreen ? '100% renovable certificado' : 'Mix nacional');
+    setText('adv-actual-coste', `${formatCurrency(results.current.amount)}/año`);
+    setText('adv-nuevo-coste', `${formatCurrency(best.amount)}/año`);
     const consumoTotal = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0) + (qrData.consumoAnualP3 || 0);
     if (consumoTotal > 0) {
-      document.getElementById('adv-actual-kwh').textContent = `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`;
-      document.getElementById('adv-nuevo-kwh').textContent = `${(best.amount / consumoTotal).toFixed(3)} €/kWh`;
+      setText('adv-actual-kwh', `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`);
+      setText('adv-nuevo-kwh', `${(best.amount / consumoTotal).toFixed(3)} €/kWh`);
     }
+  }
+
+  // === Carrusel de Mejores Ofertas: top 10 con comparación dinámica ===
+  // Estado interno del carrusel para que los handlers de filtro/navegación
+  // sigan vinculados al mismo dataset entre renders.
+  const carouselState = {
+    offers: [],          // ofertas filtradas actualmente visibles
+    allOffers: [],       // top 10 sin filtrar
+    currentIndex: 0,
+    filter: 'all',       // 'all' | 'green' | 'noperm'
+    cur: null,           // datos del contrato actual del usuario
+  };
+
+  function buildSlideHTML(offer, rank, cur) {
+    const features = [];
+    if (offer.isGreen) features.push('<span class="slide-tag tag-green">🌿 100% verde</span>');
+    if (!offer.hasPenalty) features.push('<span class="slide-tag">🔒 Sin permanencia</span>');
+    else features.push('<span class="slide-tag tag-warn">12 meses permanencia</span>');
+
+    const diff = cur.pago - offer.amount;
+    const diffLabel = diff > 0
+      ? `<span class="slide-diff good">−${formatCurrency(diff)} de ahorro</span>`
+      : diff < 0
+        ? `<span class="slide-diff warn">+${formatCurrency(-diff)} más caro</span>`
+        : '';
+
+    const pagoNuevoHTML = offer.hasDiscount
+      ? `${formatCurrency(offer.amount)}/año <span class="contract-discount-tag">1er año</span>` +
+        `<span class="contract-discount-after">luego ${formatCurrency(offer.secondYearAmount)}/año</span>`
+      : `${formatCurrency(offer.amount)}/año`;
+
+    const url = getCompanyUrl(offer.company, offer.offerName);
+    const rankBadge = rank === 1 ? `<span class="slide-rank-badge star">★ #1</span>` : `<span class="slide-rank-badge">#${rank}</span>`;
+
+    return `
+      <article class="carousel-slide" data-rank="${rank}">
+        <header class="slide-header">
+          ${rankBadge}
+          <div class="slide-titles">
+            <div class="slide-company">${offer.company}</div>
+            <div class="slide-offer-name">${offer.offerName || ''}</div>
+          </div>
+        </header>
+        <div class="slide-tags">${features.join('')}${diffLabel}</div>
+        <div class="slide-compare">
+          <div class="slide-compare-header">
+            <span class="slide-compare-tag">Actual</span>
+            <span class="slide-compare-tag slide-compare-tag-new">Propuesta</span>
+          </div>
+          <div class="slide-row">
+            <span class="slide-row-label">Empresa</span>
+            <span class="slide-row-current">${cur.company}</span>
+            <span class="slide-row-proposed">${offer.company}</span>
+          </div>
+          <div class="slide-row">
+            <span class="slide-row-label">Tipo</span>
+            <span class="slide-row-current">${glossaryTerm(cur.tipoKey, cur.tipoLabel)}</span>
+            <span class="slide-row-proposed">${glossaryTerm('precio-fijo', 'Precio fijo')}</span>
+          </div>
+          <div class="slide-row">
+            <span class="slide-row-label">Potencia</span>
+            <span class="slide-row-current">${cur.potencia}</span>
+            <span class="slide-row-proposed">${cur.potencia}</span>
+          </div>
+          <div class="slide-row ${offer.hasPenalty && cur.permanencia === 'Sin permanencia' ? 'slide-row-warn' : ''}">
+            <span class="slide-row-label">Permanencia</span>
+            <span class="slide-row-current">${cur.permanencia}</span>
+            <span class="slide-row-proposed">${offer.hasPenalty ? '12 meses' : 'Sin permanencia'}</span>
+          </div>
+          <div class="slide-row ${offer.isGreen ? 'slide-row-good' : ''}">
+            <span class="slide-row-label">Origen</span>
+            <span class="slide-row-current">Mix nacional</span>
+            <span class="slide-row-proposed">${offer.isGreen ? '100% renovable' : 'Mix nacional'}</span>
+          </div>
+          <div class="slide-row slide-row-total ${diff > 0 ? 'slide-row-good' : (diff < 0 ? 'slide-row-warn' : '')}">
+            <span class="slide-row-label">Pago/año</span>
+            <span class="slide-row-current">${formatCurrency(cur.pago)}/año</span>
+            <span class="slide-row-proposed">${pagoNuevoHTML}</span>
+          </div>
+        </div>
+        <a href="${url}" target="_blank" rel="noopener noreferrer" class="slide-cta">
+          Cambiar a ${offer.company} →
+        </a>
+      </article>
+    `;
+  }
+
+  function renderCarouselFrame() {
+    const track = $('offers-track');
+    if (!track) return;
+    track.innerHTML = carouselState.offers
+      .map((offer, i) => buildSlideHTML(offer, i + 1, carouselState.cur))
+      .join('');
+    // Dots
+    const dotsEl = $('offers-dots');
+    if (dotsEl) {
+      dotsEl.innerHTML = carouselState.offers
+        .map((_, i) => `<button type="button" class="carousel-dot ${i === carouselState.currentIndex ? 'active' : ''}" data-idx="${i}" aria-label="Ir a oferta ${i + 1}"></button>`)
+        .join('');
+    }
+    updateCarouselPosition();
+  }
+
+  function updateCarouselPosition() {
+    const track = $('offers-track');
+    if (!track) return;
+    track.style.transform = `translateX(-${carouselState.currentIndex * 100}%)`;
+    // Update active dot
+    document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === carouselState.currentIndex);
+    });
+    // Counter
+    setText('offers-counter', `${carouselState.currentIndex + 1} de ${carouselState.offers.length}`);
+    // Disable arrows at edges
+    const prev = $('carousel-prev'); const next = $('carousel-next');
+    if (prev) prev.disabled = carouselState.currentIndex === 0;
+    if (next) next.disabled = carouselState.currentIndex >= carouselState.offers.length - 1;
+  }
+
+  function navigateCarousel(direction) {
+    const len = carouselState.offers.length;
+    if (len === 0) return;
+    carouselState.currentIndex = Math.max(0, Math.min(len - 1, carouselState.currentIndex + direction));
+    updateCarouselPosition();
+  }
+
+  function applyFilter(filterKey) {
+    carouselState.filter = filterKey;
+    let filtered = carouselState.allOffers.slice();
+    if (filterKey === 'green') filtered = filtered.filter(o => o.isGreen);
+    if (filterKey === 'noperm') filtered = filtered.filter(o => !o.hasPenalty);
+    carouselState.offers = filtered;
+    carouselState.currentIndex = 0;
+    // Toggle chip active state
+    document.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filter === filterKey);
+    });
+    // Microcopy: cuánto cuesta el filtro vs sin filtrar
+    const note = $('offers-filter-note');
+    if (note) {
+      if (filterKey !== 'all' && filtered.length > 0 && carouselState.allOffers.length > 0) {
+        const cheapestFiltered = filtered[0].amount;
+        const cheapestAll = carouselState.allOffers[0].amount;
+        const extra = cheapestFiltered - cheapestAll;
+        if (extra > 0) {
+          note.textContent = `Con este filtro la mejor opción cuesta ${formatCurrency(extra)} más al año que sin filtrar.`;
+          note.hidden = false;
+        } else {
+          note.hidden = true;
+        }
+      } else {
+        note.hidden = true;
+      }
+    }
+    renderCarouselFrame();
+  }
+
+  function renderOffersCarousel(results, qrData, scenario) {
+    if (!results || !results.topOffers || results.topOffers.length === 0) {
+      const sec = $('section-ofertas'); if (sec) sec.style.display = 'none';
+      return;
+    }
+    // Init state
+    carouselState.allOffers = results.topOffers;
+    carouselState.cur = buildCurrentContractView(qrData, results);
+    carouselState.filter = 'all';
+    carouselState.currentIndex = 0;
+    carouselState.offers = results.topOffers.slice();
+
+    // Meta: posición usuario
+    setText('offers-total-count', results.totalOffers);
+    setText('offers-user-rank', results.userRankPosition
+      ? `puesto ~${results.userRankPosition}`
+      : 'puesto desconocido');
+
+    renderCarouselFrame();
+
+    // Wire up event handlers (idempotente: re-bind seguro)
+    const prev = $('carousel-prev');
+    const next = $('carousel-next');
+    const dots = $('offers-dots');
+    const filters = $('offers-filters');
+    if (prev) prev.onclick = () => navigateCarousel(-1);
+    if (next) next.onclick = () => navigateCarousel(1);
+    if (dots) dots.onclick = e => {
+      const dot = e.target.closest('.carousel-dot');
+      if (!dot) return;
+      const idx = parseInt(dot.dataset.idx, 10);
+      if (!isNaN(idx)) { carouselState.currentIndex = idx; updateCarouselPosition(); }
+    };
+    if (filters) filters.onclick = e => {
+      const chip = e.target.closest('.filter-chip');
+      if (chip) applyFilter(chip.dataset.filter);
+    };
+    // Swipe en mobile
+    const viewport = document.querySelector('.carousel-viewport');
+    if (viewport) {
+      let startX = 0;
+      viewport.ontouchstart = e => { startX = e.touches[0].clientX; };
+      viewport.ontouchend = e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 40) navigateCarousel(dx < 0 ? 1 : -1);
+      };
+    }
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (!$('screen-result').classList.contains('active')) return;
+      if (e.target.matches('input, textarea, button')) return;
+      if (e.key === 'ArrowLeft') navigateCarousel(-1);
+      else if (e.key === 'ArrowRight') navigateCarousel(1);
+    });
+
+    // Tabla técnica avanzada apunta siempre a la mejor (no a la slide actual)
+    renderAdvancedTable(results, qrData, scenario);
   }
 
   // === "Puntos clave": bullets compactos derivados de los modifiers ===
@@ -1630,36 +1795,9 @@
       document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
     }
 
-    const bestHeader = document.getElementById('best-header');
-    const bestBadge = document.getElementById('result-badge');
-    const savingsEl = document.getElementById('result-savings');
-    const altHeader = document.getElementById('alt-header');
-    const savingsHero = document.getElementById('savings-hero');
-    const insightEl = document.getElementById('insight-text');
-
-    // Detail card
-    document.getElementById('result-best-company-detail').textContent = results.best.company;
-    const bestOfferNameEl = document.getElementById('result-best-offer-name');
-    if (results.best.offerName) {
-      bestOfferNameEl.textContent = results.best.offerName;
-      bestOfferNameEl.style.display = '';
-    } else {
-      bestOfferNameEl.style.display = 'none';
-    }
-
-    // Feature tags for best offer
-    document.getElementById('result-best-features').innerHTML = buildFeatureTags(results.best);
-
-    // Link a la web oficial de la comercializadora (BBDD interna). Si no la
-    // tenemos catalogada, fallback a Google search con el nombre exacto.
+    // CTA en "Cómo cambiar de comercializadora" → web oficial de la mejor
     const bestUrl = getCompanyUrl(results.best.company, results.best.offerName);
-    const linkEl = document.getElementById('result-best-link');
-    if (linkEl) {
-      linkEl.href = bestUrl;
-      linkEl.textContent = `Ver tarifa en ${results.best.company} →`;
-    }
-    // CTA paralelo en "Cómo cambiar de comercializadora"
-    const howtoLinkEl = document.getElementById('howto-cta-link');
+    const howtoLinkEl = $('howto-cta-link');
     if (howtoLinkEl) {
       howtoLinkEl.href = bestUrl;
       const txt = howtoLinkEl.querySelector('.howto-cta-text');
@@ -1687,37 +1825,14 @@
         break;
     }
 
-    // Alternatives — improved card layout with stacked info
-    results.alternatives.forEach((alt, i) => {
-      const el = document.getElementById(`alt-${i + 1}`);
-      if (el && alt) {
-        el.querySelector('.alt-name').textContent = alt.company;
-        const altOfferName = el.querySelector('.alt-offer-name');
-        if (altOfferName) {
-          altOfferName.textContent = alt.offerName || '';
-        }
-        el.querySelector('.alt-amount').textContent = `${formatCurrency(alt.amount)}/a\u00f1o`;
-        const saving = results.current.amount - alt.amount;
-        el.querySelector('.alt-saving').textContent = saving > 0
-          ? `Ahorras ${formatCurrency(saving)}/a\u00f1o`
-          : '';
-        // Feature tags
-        const altFeaturesEl = el.querySelector('.alt-features');
-        if (altFeaturesEl) {
-          altFeaturesEl.innerHTML = buildFeatureTags(alt);
-        }
-        el.style.display = '';
-      } else if (el) {
-        el.style.display = 'none';
-      }
-    });
-
-    // Show data source badge
+    // Disclaimer del pie de página
     const disclaimer = document.querySelector('.result-disclaimer p');
-    disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no est\u00e1 afiliado con ninguna comercializadora.`;
+    if (disclaimer) {
+      disclaimer.textContent = `Datos reales del comparador oficial de la CNMC. ${results.totalOffers} ofertas analizadas. AhorraLuz no está afiliado con ninguna comercializadora.`;
+    }
 
-    // Renderizar "Tu nuevo contrato" + Puntos clave
-    renderContractComparison(results, qrData, scenario);
+    // Renderizar carrusel de ofertas (sustituye Tu nuevo contrato + Mejores ofertas)
+    renderOffersCarousel(results, qrData, scenario);
     renderPuntosClave(scenario, qrData, results);
 
     // En desktop, abrir las secciones desplegables automáticamente

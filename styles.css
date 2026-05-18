@@ -2218,6 +2218,308 @@ html, body {
 }
 
 /* ===================================================================
+   CARRUSEL DE OFERTAS — top 10 con comparación dinámica vs actual
+   =================================================================== */
+.offers-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.offers-position {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.offers-position strong { color: var(--text); font-weight: 700; }
+
+.offers-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.filter-chip.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.offers-filter-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border-left: 2px solid var(--text-muted);
+  border-radius: 4px;
+  line-height: 1.45;
+}
+.offers-filter-note[hidden] { display: none !important; }
+
+/* Carrusel — viewport + track */
+.offers-carousel {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.carousel-viewport {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 320ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
+}
+
+.carousel-arrow {
+  width: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  align-self: center;
+  height: 60px;
+}
+.carousel-arrow:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.carousel-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.carousel-dot:hover { background: var(--text-muted); }
+.carousel-dot.active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+.carousel-counter {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Cada slide */
+.carousel-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  padding: 18px;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.slide-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.slide-rank-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.slide-rank-badge.star {
+  background: var(--accent-subtle);
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+.slide-titles { flex: 1; min-width: 0; }
+.slide-company {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.slide-offer-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.slide-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.slide-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.slide-tag.tag-green {
+  background: rgba(74, 222, 128, 0.08);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.15);
+}
+.slide-tag.tag-warn {
+  background: rgba(251, 191, 36, 0.06);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.12);
+}
+.slide-diff {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+.slide-diff.good { background: var(--savings-glow); color: var(--savings); }
+.slide-diff.warn { background: rgba(251,191,36,0.10); color: #fbbf24; }
+
+/* Tabla comparativa dentro del slide */
+.slide-compare {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.slide-compare-header {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.6fr) 1fr 1fr;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--bg-card-alt);
+}
+.slide-compare-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.slide-compare-tag-new { color: var(--accent); grid-column: 3; }
+.slide-compare-header .slide-compare-tag:first-child + .slide-compare-tag { grid-column: 2; }
+
+.slide-row {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.6fr) 1fr 1fr;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.3;
+  border-top: 1px solid var(--border-subtle);
+}
+.slide-row-label { color: var(--text-muted); font-weight: 500; }
+.slide-row-current { color: var(--text-secondary); }
+.slide-row-proposed { color: var(--text); font-weight: 600; word-break: break-word; }
+
+.slide-row-good { background: rgba(52, 211, 153, 0.04); }
+.slide-row-good .slide-row-proposed { color: var(--savings); }
+.slide-row-warn { background: rgba(251, 191, 36, 0.04); }
+.slide-row-warn .slide-row-proposed { color: #fbbf24; }
+
+.slide-row-total {
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  padding: 10px;
+}
+.slide-row-total .slide-row-label { color: var(--text); font-weight: 700; }
+.slide-row-total .slide-row-proposed { font-weight: 800; }
+.slide-row-total.slide-row-good .slide-row-proposed { color: var(--accent); }
+
+.slide-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 0 20px rgba(0,212,170,0.12);
+}
+.slide-cta:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  /* En mobile escondemos las flechas: se navega por swipe + dots */
+  .carousel-arrow { display: none; }
+  .offers-carousel { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .carousel-slide { padding: 24px; }
+  .slide-row { font-size: 12px; padding: 10px 14px; }
+  .slide-compare-header { padding: 10px 14px; }
+  .slide-row-total { font-size: 13px; padding: 12px 14px; }
+  .slide-company { font-size: 17px; }
+  .slide-offer-name { font-size: 13px; }
+  .carousel-arrow { width: 44px; height: 72px; }
+}
+
+/* ===================================================================
    GLOSARIO: términos técnicos con icono ? + popover
    =================================================================== */
 .glossary-term {

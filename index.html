@@ -23,7 +23,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260518f">
+  <link rel="stylesheet" href="styles.css?v=20260519a">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -256,56 +256,6 @@
         </div>
       </div>
 
-      <!-- === Tu nuevo contrato — tabla compacta 3 columnas === -->
-      <div class="section-block" id="section-contract">
-        <div class="section-header">
-          <h3 id="contract-section-title">Tu nuevo contrato</h3>
-          <button class="help-toggle" data-help="help-contract" aria-label="Ayuda">?</button>
-        </div>
-        <div class="help-text" id="help-contract">
-          <p>Comparativa fila a fila entre tu contrato actual y la mejor oferta. Las celdas verdes marcan mejoras, las amarillas requieren atenci&oacute;n.</p>
-        </div>
-
-        <div class="contract-compare-table">
-          <div class="contract-row contract-row-header">
-            <span class="contract-col-label"></span>
-            <span class="contract-col-current">
-              <span class="contract-col-tag">Actual</span>
-              <span class="contract-col-company" id="contract-actual-company">&mdash;</span>
-            </span>
-            <span class="contract-col-proposed">
-              <span class="contract-col-tag">Propuesto</span>
-              <span class="contract-col-company" id="contract-nuevo-company">&mdash;</span>
-            </span>
-          </div>
-          <div class="contract-row" id="contract-row-tipo">
-            <span class="contract-col-label">Tipo</span>
-            <span class="contract-col-current" id="chip-actual-tipo">&mdash;</span>
-            <span class="contract-col-proposed" id="chip-nuevo-tipo">&mdash;</span>
-          </div>
-          <div class="contract-row" id="contract-row-potencia">
-            <span class="contract-col-label">Potencia</span>
-            <span class="contract-col-current" id="chip-actual-potencia">&mdash;</span>
-            <span class="contract-col-proposed" id="chip-nuevo-potencia">&mdash;</span>
-          </div>
-          <div class="contract-row" id="contract-row-permanencia">
-            <span class="contract-col-label">Permanencia</span>
-            <span class="contract-col-current" id="chip-actual-permanencia">&mdash;</span>
-            <span class="contract-col-proposed" id="chip-nuevo-permanencia">&mdash;</span>
-          </div>
-          <div class="contract-row" id="contract-row-origen">
-            <span class="contract-col-label">Origen</span>
-            <span class="contract-col-current" id="chip-actual-origen">&mdash;</span>
-            <span class="contract-col-proposed" id="chip-nuevo-origen">&mdash;</span>
-          </div>
-          <div class="contract-row contract-row-total" id="contract-row-pago">
-            <span class="contract-col-label">Pago/a&ntilde;o</span>
-            <span class="contract-col-current" id="chip-actual-pago">&mdash;</span>
-            <span class="contract-col-proposed" id="chip-nuevo-pago">&mdash;</span>
-          </div>
-        </div>
-      </div>
-
       <!-- === Secciones desplegables: análisis + ofertas + perfil === -->
 
       <details class="collapsible-section" id="section-analisis">
@@ -405,51 +355,36 @@
           <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
         </summary>
         <div class="collapsible-content">
-          <div class="result-best">
-            <span class="result-badge" id="result-badge"><span id="best-header">Mejor oferta</span></span>
-            <span class="result-best-company" id="result-best-company-detail">&mdash;</span>
-            <span class="result-best-offer-name" id="result-best-offer-name"></span>
-            <div class="result-best-features" id="result-best-features"></div>
-            <div class="result-savings" id="result-savings">&mdash;</div>
-            <a href="#" id="result-best-link" class="result-best-link" target="_blank" rel="noopener noreferrer">
-              Ver tarifa en la web de la comercializadora &rarr;
-            </a>
+          <!-- Meta del carrusel: posición usuario + filtros + contador -->
+          <div class="offers-meta">
+            <div class="offers-position" id="offers-position-info">
+              Tu oferta actual est&aacute; en el <strong id="offers-user-rank">&mdash;</strong>
+              de <strong id="offers-total-count">&mdash;</strong> ofertas analizadas.
+            </div>
+            <div class="offers-filters" id="offers-filters">
+              <button type="button" class="filter-chip active" data-filter="all">Todas</button>
+              <button type="button" class="filter-chip" data-filter="green">&#x1F33F; Verde</button>
+              <button type="button" class="filter-chip" data-filter="noperm">&#x1F513; Sin permanencia</button>
+            </div>
+            <div class="offers-filter-note" id="offers-filter-note" hidden></div>
           </div>
+
+          <!-- Carrusel: track + flechas + dots -->
+          <div class="offers-carousel">
+            <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Oferta anterior">&larr;</button>
+            <div class="carousel-viewport">
+              <div class="carousel-track" id="offers-track"></div>
+            </div>
+            <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Siguiente oferta">&rarr;</button>
+          </div>
+          <div class="carousel-dots" id="offers-dots" role="tablist"></div>
+          <div class="carousel-counter" id="offers-counter"></div>
+
           <p class="result-best-note">
             Mostramos precios oficiales seg&uacute;n la CNMC. Algunas comercializadoras tienen
             ofertas adicionales en su web (descuentos promocionales) que pueden no estar aqu&iacute;
             reflejadas. <strong>Verifica en su web antes de contratar.</strong>
           </p>
-
-          <div class="alt-section-title" id="alt-header">Tambi&eacute;n podr&iacute;as considerar</div>
-          <div class="alt-grid">
-            <div class="alt-offer" id="alt-1">
-              <div class="alt-offer-top">
-                <div>
-                  <span class="alt-name">&mdash;</span>
-                  <div class="alt-offer-name"></div>
-                </div>
-                <span class="alt-amount">&mdash;</span>
-              </div>
-              <div class="alt-offer-bottom">
-                <span class="alt-saving">&mdash;</span>
-                <div class="alt-features"></div>
-              </div>
-            </div>
-            <div class="alt-offer" id="alt-2">
-              <div class="alt-offer-top">
-                <div>
-                  <span class="alt-name">&mdash;</span>
-                  <div class="alt-offer-name"></div>
-                </div>
-                <span class="alt-amount">&mdash;</span>
-              </div>
-              <div class="alt-offer-bottom">
-                <span class="alt-saving">&mdash;</span>
-                <div class="alt-features"></div>
-              </div>
-            </div>
-          </div>
         </div>
       </details>
 
@@ -573,6 +508,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260518f"></script>
+  <script src="app.js?v=20260519a"></script>
 </body>
 </html>
