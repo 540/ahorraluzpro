@@ -1229,35 +1229,25 @@
     };
   }
 
-  // === Tabla técnica avanzada (vive en "Nuestro análisis", apunta a la mejor) ===
-  function renderAdvancedTable(results, qrData, scenario) {
-    if (!results || !results.best) return;
-    const best = results.best;
+  // === Ficha técnica de TU contrato (vive en "Tu perfil de gasto") ===
+  // Solo datos del contrato actual del usuario. Para la propuesta usar el
+  // carrusel.
+  function renderAdvancedTable(results, qrData) {
+    if (!results) return;
     const cur = buildCurrentContractView(qrData, results);
-    const pot = (scenario.modifiers && scenario.modifiers.potOverdimensioned) || null;
     const tarifaAccesoKey = qrData.peaje === 19 ? '3.0td' : '2.0td';
     const tarifaAccesoLabel = qrData.peaje === 19 ? '3.0TD (>15 kW)' : '2.0TD (≤15 kW)';
     const tiposContrato = { 0: 'Precio fijo', 1: 'Fijo no estándar', 2: 'Indexado al mercado' };
     setHTML('adv-actual-tarifa', glossaryTerm(tarifaAccesoKey, tarifaAccesoLabel));
-    setText('adv-nuevo-tarifa', tarifaAccesoLabel);
     setText('adv-actual-pot-p1', qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—');
     setText('adv-actual-pot-p2', qrData.potenciaP2 ? `${qrData.potenciaP2.toFixed(2)} kW` : '—');
-    const potP1Nueva = pot ? pot.sugerida : qrData.potenciaP1;
-    const potP2Nueva = pot ? pot.sugerida : qrData.potenciaP2;
-    setText('adv-nuevo-pot-p1', potP1Nueva ? `${potP1Nueva.toFixed(2)} kW` : '—');
-    setText('adv-nuevo-pot-p2', potP2Nueva ? `${potP2Nueva.toFixed(2)} kW` : '—');
     setText('adv-actual-tc', tiposContrato[qrData.tipoContrato] || '—');
-    setText('adv-nuevo-tc', 'Precio fijo (mercado libre)');
     setText('adv-actual-perm', cur.permanencia);
-    setText('adv-nuevo-perm', best.hasPenalty ? '12 meses (estándar)' : 'Sin permanencia');
     setText('adv-actual-origen', 'Mix nacional');
-    setText('adv-nuevo-origen', best.isGreen ? '100% renovable certificado' : 'Mix nacional');
     setText('adv-actual-coste', `${formatCurrency(results.current.amount)}/año`);
-    setText('adv-nuevo-coste', `${formatCurrency(best.amount)}/año`);
     const consumoTotal = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0) + (qrData.consumoAnualP3 || 0);
     if (consumoTotal > 0) {
       setText('adv-actual-kwh', `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`);
-      setText('adv-nuevo-kwh', `${(best.amount / consumoTotal).toFixed(3)} €/kWh`);
     }
   }
 
@@ -1273,12 +1263,26 @@
   };
 
   // Filas de la columna IZQUIERDA fija con datos del contrato actual del usuario.
-  // Cada fila tiene un data-row para que la propuesta pueda alinear sus filas
-  // visualmente con la misma altura.
-  function renderCurrentColumn(cur) {
+  // Las filas se alinean en altura con las de la propuesta para una comparación
+  // visual fila a fila.
+  function renderCurrentColumn(cur, qrData) {
     setText('offers-cur-company', cur.company);
     const sub = $('offers-cur-subtitle');
-    if (sub) sub.textContent = '';
+    if (sub) sub.textContent = 'Tu situación actual';
+
+    // Tags: datos del contrato actual relevantes para comparar
+    const tags = [];
+    if (qrData && qrData.tipoContrato === 2) {
+      tags.push('<span class="slide-tag tag-warn">Indexado al mercado</span>');
+    } else {
+      tags.push('<span class="slide-tag">Precio actual</span>');
+    }
+    const finPen = qrData && qrData.finPenalizacion ? new Date(qrData.finPenalizacion) : null;
+    if (finPen && !isNaN(finPen) && finPen > new Date()) {
+      tags.push('<span class="slide-tag tag-warn">⚠ Permanencia activa</span>');
+    }
+    setHTML('offers-cur-tags', tags.join(''));
+
     const rows = $('offers-cur-rows');
     if (rows) {
       rows.innerHTML = `
@@ -1295,17 +1299,45 @@
   // de filas que el actual, mismas alturas, para que la comparación sea visual
   // fila a fila aunque el actual sea estático.
   function buildSlideHTML(offer, rank, cur) {
+    // Tags (features de la oferta). Sin chip de ahorro aquí — va aparte como banner.
     const features = [];
     if (offer.isGreen) features.push('<span class="slide-tag tag-green">🌿 100% verde</span>');
     if (!offer.hasPenalty) features.push('<span class="slide-tag">🔒 Sin permanencia</span>');
     else features.push('<span class="slide-tag tag-warn">12 meses permanencia</span>');
+    if (offer.hasDiscount && offer.discountAmount >= 20) {
+      features.push('<span class="slide-tag tag-discount">🎁 Descuento de bienvenida</span>');
+    }
 
     const diff = cur.pago - offer.amount;
-    const diffLabel = diff > 0
-      ? `<span class="slide-diff good">−${formatCurrency(diff)} ahorro</span>`
-      : diff < 0
-        ? `<span class="slide-diff warn">+${formatCurrency(-diff)} más caro</span>`
-        : '';
+    const pct = cur.pago > 0 ? Math.round((diff / cur.pago) * 100) : 0;
+
+    // Banner de ahorro/sobrecoste destacado encima del CTA
+    let savingsBanner = '';
+    if (diff > 0) {
+      savingsBanner = `<div class="slide-savings-banner good">
+        <span class="slide-savings-icon">💰</span>
+        <div class="slide-savings-text">
+          <span class="slide-savings-amount">Te ahorras ${formatCurrency(diff)}/año</span>
+          <span class="slide-savings-detail">${pct}% menos que tu tarifa actual${offer.hasDiscount ? ' (con descuento de bienvenida el 1er año)' : ''}</span>
+        </div>
+      </div>`;
+    } else if (diff < 0) {
+      savingsBanner = `<div class="slide-savings-banner warn">
+        <span class="slide-savings-icon">⚠</span>
+        <div class="slide-savings-text">
+          <span class="slide-savings-amount">+${formatCurrency(-diff)}/año más caro</span>
+          <span class="slide-savings-detail">${Math.abs(pct)}% más que tu tarifa actual</span>
+        </div>
+      </div>`;
+    } else {
+      savingsBanner = `<div class="slide-savings-banner neutral">
+        <span class="slide-savings-icon">≈</span>
+        <div class="slide-savings-text">
+          <span class="slide-savings-amount">Mismo precio</span>
+          <span class="slide-savings-detail">igual que tu tarifa actual</span>
+        </div>
+      </div>`;
+    }
 
     const pagoNuevoHTML = offer.hasDiscount
       ? `${formatCurrency(offer.amount)}/año <span class="contract-discount-tag">1er año</span>` +
@@ -1322,7 +1354,7 @@
         <div class="offers-col-tag offers-col-tag-new">Propuesta ${rankBadge}</div>
         <div class="offers-col-company">${offer.company}</div>
         <div class="offers-col-subtitle">${offer.offerName || ''}</div>
-        <div class="slide-tags">${features.join('')}${diffLabel}</div>
+        <div class="slide-tags">${features.join('')}</div>
         <ul class="offers-col-rows">
           <li class="offers-col-row" data-row="tipo"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${glossaryTerm('precio-fijo', 'Precio fijo')}</span></li>
           <li class="offers-col-row" data-row="potencia"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.potencia}</span></li>
@@ -1339,6 +1371,7 @@
             <span class="offers-col-value">${pagoNuevoHTML}</span>
           </li>
         </ul>
+        ${savingsBanner}
         <a href="${url}" target="_blank" rel="noopener noreferrer" class="slide-cta">
           Cambiar a ${offer.company} →
         </a>
@@ -1435,7 +1468,7 @@
       : 'puesto desconocido');
 
     // Columna izquierda (actual) — fija, se pinta una vez
-    renderCurrentColumn(carouselState.cur);
+    renderCurrentColumn(carouselState.cur, qrData);
     renderCarouselFrame();
 
     // Wire up event handlers (idempotente: re-bind seguro)
@@ -1473,8 +1506,8 @@
       else if (e.key === 'ArrowRight') navigateCarousel(1);
     });
 
-    // Tabla técnica avanzada apunta siempre a la mejor (no a la slide actual)
-    renderAdvancedTable(results, qrData, scenario);
+    // Ficha técnica del contrato actual (en "Tu perfil de gasto")
+    renderAdvancedTable(results, qrData);
   }
 
   // === "Puntos clave": bullets compactos derivados de los modifiers ===

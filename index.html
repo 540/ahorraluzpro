@@ -23,7 +23,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260519b">
+  <link rel="stylesheet" href="styles.css?v=20260519c">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -270,7 +270,9 @@
               <div class="offers-col-tag">Tu contrato actual</div>
               <div class="offers-col-company" id="offers-cur-company">&mdash;</div>
               <div class="offers-col-subtitle" id="offers-cur-subtitle"></div>
+              <div class="slide-tags" id="offers-cur-tags"></div>
               <ul class="offers-col-rows" id="offers-cur-rows"></ul>
+              <div class="offers-cur-savings-placeholder" aria-hidden="true"></div>
             </aside>
 
             <!-- Columna que rota: propuesta de cada oferta -->
@@ -340,62 +342,7 @@
             </div>
           </div>
 
-          <details class="contract-details">
-            <summary>
-              <span class="details-toggle-icon" aria-hidden="true">&#9656;</span>
-              Ver detalles t&eacute;cnicos avanzados
-            </summary>
-            <div class="contract-details-content">
-              <div class="contract-table">
-                <div class="contract-table-row contract-table-head">
-                  <span></span>
-                  <span>Tu contrato actual</span>
-                  <span>Contrato propuesto</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Tarifa de acceso</span>
-                  <span id="adv-actual-tarifa">&mdash;</span>
-                  <span id="adv-nuevo-tarifa">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Potencia P1 (punta)</span>
-                  <span id="adv-actual-pot-p1">&mdash;</span>
-                  <span id="adv-nuevo-pot-p1">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Potencia P2 (valle)</span>
-                  <span id="adv-actual-pot-p2">&mdash;</span>
-                  <span id="adv-nuevo-pot-p2">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Tipo de contrato</span>
-                  <span id="adv-actual-tc">&mdash;</span>
-                  <span id="adv-nuevo-tc">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Permanencia</span>
-                  <span id="adv-actual-perm">&mdash;</span>
-                  <span id="adv-nuevo-perm">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Origen energ&iacute;a</span>
-                  <span id="adv-actual-origen">&mdash;</span>
-                  <span id="adv-nuevo-origen">&mdash;</span>
-                </div>
-                <div class="contract-table-row contract-table-row-total">
-                  <span class="contract-table-key">Coste anual estimado</span>
-                  <span id="adv-actual-coste">&mdash;</span>
-                  <span id="adv-nuevo-coste">&mdash;</span>
-                </div>
-                <div class="contract-table-row">
-                  <span class="contract-table-key">Coste medio &euro;/kWh</span>
-                  <span id="adv-actual-kwh">&mdash;</span>
-                  <span id="adv-nuevo-kwh">&mdash;</span>
-                </div>
-              </div>
-              <p class="contract-details-footnote">El coste medio (&euro;/kWh) se calcula dividiendo el coste anual entre tu consumo total. Los precios desglosados por periodo (P1/P2/P3) no siempre los publica la comercializadora.</p>
-            </div>
-          </details>
+          
         </div>
       </details>
 
@@ -473,6 +420,54 @@
               </div>
             </div>
           </div>
+        
+          <details class="contract-details">
+            <summary>
+              <span class="details-toggle-icon" aria-hidden="true">&#9656;</span>
+              Ficha t&eacute;cnica de tu contrato
+            </summary>
+            <div class="contract-details-content">
+              <div class="contract-table contract-table-single">
+                <div class="contract-table-row contract-table-head">
+                  <span>Atributo</span>
+                  <span>Valor</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Tarifa de acceso</span>
+                  <span id="adv-actual-tarifa">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Potencia P1 (punta)</span>
+                  <span id="adv-actual-pot-p1">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Potencia P2 (valle)</span>
+                  <span id="adv-actual-pot-p2">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Tipo de contrato</span>
+                  <span id="adv-actual-tc">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Permanencia</span>
+                  <span id="adv-actual-perm">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Origen energ&iacute;a</span>
+                  <span id="adv-actual-origen">&mdash;</span>
+                </div>
+                <div class="contract-table-row contract-table-row-total">
+                  <span class="contract-table-key">Coste anual estimado</span>
+                  <span id="adv-actual-coste">&mdash;</span>
+                </div>
+                <div class="contract-table-row">
+                  <span class="contract-table-key">Coste medio &euro;/kWh</span>
+                  <span id="adv-actual-kwh">&mdash;</span>
+                </div>
+              </div>
+              <p class="contract-details-footnote">El coste medio (&euro;/kWh) se calcula dividiendo el coste anual entre tu consumo total. Los precios desglosados por periodo (P1/P2/P3) no siempre los publica la comercializadora.</p>
+            </div>
+          </details>
         </div>
       </details>
 
@@ -519,6 +514,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260519b"></script>
+  <script src="app.js?v=20260519c"></script>
 </body>
 </html>
