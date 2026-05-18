@@ -1453,6 +1453,55 @@
     renderCarouselFrame();
   }
 
+  // Mensaje contextual encima del carrusel — distinto por casuística.
+  // Cubre: rank-1 (ya tienes la mejor), rank-top3 (ya estás en el top),
+  // already-cheap (no hay nada mejor), big/normal/small-savings (cuánto ahorras).
+  function renderCarouselContextNote(scenario, results) {
+    const el = $('offers-context-note');
+    if (!el) return;
+    const best = results && results.best;
+    const savings = (results && results.savings) || 0;
+    const cur = scenario && scenario.modifiers ? scenario.modifiers : {};
+    let tone = 'info', icon = 'ℹ', text = '';
+
+    switch (scenario.primaryCase) {
+      case 'rank-1':
+        tone = 'good'; icon = '🏆';
+        text = `<strong>Ya tienes la mejor oferta del mercado.</strong> Estas son las top alternativas si quisieras cambiar.`;
+        break;
+      case 'rank-top3':
+        tone = 'good'; icon = '✓';
+        text = `<strong>Tu oferta ya está entre las más competitivas.</strong> Te mostramos las top 10 por si encuentras algo mejor.`;
+        break;
+      case 'already-cheap':
+        tone = 'info'; icon = '👌';
+        text = `<strong>Ninguna oferta de la CNMC mejora tu tarifa actual.</strong> Mantén la que tienes — estas son las más competitivas para comparar.`;
+        break;
+      case 'big-savings':
+        tone = 'good'; icon = '💰';
+        text = best
+          ? `Hay ahorros significativos: hasta <strong>${formatCurrency(savings)}/año</strong> cambiándote. Estas son las mejores ofertas.`
+          : `Hay ahorros significativos disponibles. Estas son las mejores ofertas.`;
+        break;
+      case 'normal-savings':
+        tone = 'good'; icon = '💸';
+        text = `Hay ofertas más baratas que la tuya — hasta <strong>${formatCurrency(savings)}/año</strong>. Estas son las top 10.`;
+        break;
+      case 'small-savings':
+        tone = 'info'; icon = 'ℹ';
+        text = `El margen de mejora es pequeño (<strong>~${formatCurrency(savings)}/año</strong>). Aun así, estas son las mejores alternativas.`;
+        break;
+      case 'no-offers':
+        el.hidden = true; return;
+      default:
+        el.hidden = true; return;
+    }
+
+    el.className = `offers-context-note ${tone}`;
+    el.innerHTML = `<span class="ctx-icon" aria-hidden="true">${icon}</span><span class="ctx-text">${text}</span>`;
+    el.hidden = false;
+  }
+
   function renderOffersCarousel(results, qrData, scenario) {
     if (!results || !results.topOffers || results.topOffers.length === 0) {
       const sec = $('section-ofertas'); if (sec) sec.style.display = 'none';
@@ -1470,6 +1519,9 @@
     setText('offers-user-rank', results.userRankPosition
       ? `puesto ~${results.userRankPosition}`
       : 'puesto desconocido');
+
+    // Nota contextual según casuística (rank-1, already-cheap, big-savings, etc.)
+    renderCarouselContextNote(scenario, results);
 
     // Columna izquierda (actual) — fija, se pinta una vez
     renderCurrentColumn(carouselState.cur, qrData);

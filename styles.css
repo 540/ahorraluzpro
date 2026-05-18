@@ -5,7 +5,45 @@
    DESIGN TOKENS
    =================================================================== */
 :root {
-  /* Dark theme = default */
+  /* Light theme = default. El tema oscuro se aplica con [data-theme="dark"]
+     o automáticamente si el sistema lo prefiere y no hay override manual. */
+  --bg: #f1f1f4;
+  --bg-subtle: #e8e8eb;
+  --bg-card: #ffffff;
+  --bg-card-alt: #f8f8fa;
+  --bg-card-hover: #f0f0f3;
+  --text: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --accent: #009070;
+  --accent-hover: #00a784;
+  --accent-subtle: rgba(0, 144, 112, 0.10);
+  --accent-glow: rgba(0, 144, 112, 0.18);
+  --savings: #059669;
+  --savings-glow: rgba(5, 150, 105, 0.14);
+  --danger: #dc2626;
+  --border: rgba(0, 0, 0, 0.14);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(0, 144, 112, 0.35);
+  --on-bg-translucent: rgba(0, 0, 0, 0.25);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.10);
+  --shadow-glow: 0 0 32px rgba(0, 144, 112, 0.15);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================================================================
+   DARK THEME — override de variables. Se aplica:
+   - manualmente si data-theme="dark" está en <html>
+   - automáticamente si el sistema prefiere dark Y no hay override manual
+   =================================================================== */
+:root[data-theme="dark"] {
   --bg: #09090b;
   --bg-subtle: #0f0f14;
   --bg-card: #141419;
@@ -25,78 +63,38 @@
   --border-subtle: rgba(255, 255, 255, 0.04);
   --border-accent: rgba(0, 212, 170, 0.2);
   --on-bg-translucent: rgba(255, 255, 255, 0.2);
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.15);
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ===================================================================
-   LIGHT THEME — override de variables. Se aplica:
-   - automáticamente si el sistema prefiere light Y no hay override manual
-   - manualmente si data-theme="light" está en <html>
-   =================================================================== */
-:root[data-theme="light"] {
-  /* Fondo principal más gris para que las cards blancas resalten más */
-  --bg: #f1f1f4;
-  --bg-subtle: #e8e8eb;
-  --bg-card: #ffffff;
-  --bg-card-alt: #f8f8fa;
-  --bg-card-hover: #f0f0f3;
-  --text: #18181b;
-  --text-secondary: #52525b;
-  --text-muted: #71717a;
-  --accent: #009070;
-  --accent-hover: #00a784;
-  --accent-subtle: rgba(0, 144, 112, 0.10);
-  --accent-glow: rgba(0, 144, 112, 0.18);
-  --savings: #059669;
-  --savings-glow: rgba(5, 150, 105, 0.14);
-  --danger: #dc2626;
-  /* Bordes con más contraste en light */
-  --border: rgba(0, 0, 0, 0.14);
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-accent: rgba(0, 144, 112, 0.35);
-  --on-bg-translucent: rgba(0, 0, 0, 0.25);
-  /* Sombras más marcadas para elevar las cards blancas */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.10);
-  --shadow-glow: 0 0 32px rgba(0, 144, 112, 0.15);
 }
 
 /* Auto-detect del sistema cuando no hay override manual */
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #f1f1f4;
-    --bg-subtle: #e8e8eb;
-    --bg-card: #ffffff;
-    --bg-card-alt: #f8f8fa;
-    --bg-card-hover: #f0f0f3;
-    --text: #18181b;
-    --text-secondary: #52525b;
-    --text-muted: #71717a;
-    --accent: #009070;
-    --accent-hover: #00a784;
-    --accent-subtle: rgba(0, 144, 112, 0.10);
-    --accent-glow: rgba(0, 144, 112, 0.18);
-    --savings: #059669;
-    --savings-glow: rgba(5, 150, 105, 0.14);
-    --danger: #dc2626;
-    --border: rgba(0, 0, 0, 0.14);
-    --border-subtle: rgba(0, 0, 0, 0.08);
-    --border-accent: rgba(0, 144, 112, 0.35);
-    --on-bg-translucent: rgba(0, 0, 0, 0.25);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.10);
-    --shadow-glow: 0 0 32px rgba(0, 144, 112, 0.15);
+    --bg: #09090b;
+    --bg-subtle: #0f0f14;
+    --bg-card: #141419;
+    --bg-card-alt: #18181f;
+    --bg-card-hover: #1c1c24;
+    --text: #f0f0f2;
+    --text-secondary: #a1a1aa;
+    --text-muted: #6b6b7b;
+    --accent: #00d4aa;
+    --accent-hover: #00f0c0;
+    --accent-subtle: rgba(0, 212, 170, 0.08);
+    --accent-glow: rgba(0, 212, 170, 0.15);
+    --savings: #34d399;
+    --savings-glow: rgba(52, 211, 153, 0.12);
+    --danger: #f87171;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --border-accent: rgba(0, 212, 170, 0.2);
+    --on-bg-translucent: rgba(255, 255, 255, 0.2);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.15);
   }
 }
 
@@ -132,15 +130,16 @@
 
 .theme-toggle svg { width: 18px; height: 18px; }
 
-.theme-toggle .icon-sun { display: none; }
-.theme-toggle .icon-moon { display: block; }
+/* Por defecto (light theme) muestra el sol; al cambiar a dark muestra luna */
+.theme-toggle .icon-sun { display: block; }
+.theme-toggle .icon-moon { display: none; }
 
-:root[data-theme="light"] .theme-toggle .icon-sun { display: block; }
-:root[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .theme-toggle .icon-sun { display: block; }
-  :root:not([data-theme]) .theme-toggle .icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-toggle .icon-sun { display: none; }
+  :root:not([data-theme]) .theme-toggle .icon-moon { display: block; }
 }
 
 @media (min-width: 1024px) {
@@ -2380,11 +2379,47 @@ html, body {
 .offers-col-row.row-good .offers-col-value { color: var(--savings); }
 .offers-col-row.row-warn .offers-col-value { color: #fbbf24; }
 
-/* Tag de descuento (más cálido para llamar la atención) */
+/* Tag de descuento (positivo — significa ahorro, no advertencia) */
 .slide-tag.tag-discount {
+  background: var(--savings-glow);
+  color: var(--savings);
+  border-color: var(--savings);
+}
+
+/* Nota contextual del carrusel — varía según la casuística (rank-1, already-cheap, etc.) */
+.offers-context-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+.offers-context-note .ctx-icon {
+  font-size: 18px;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+.offers-context-note .ctx-text { flex: 1; }
+.offers-context-note .ctx-text strong { color: var(--text-strong); }
+.offers-context-note.good {
+  background: var(--savings-glow);
+  border-color: var(--savings);
+  color: var(--savings);
+}
+.offers-context-note.good .ctx-text strong { color: var(--savings); }
+.offers-context-note.warn {
   background: rgba(251, 191, 36, 0.10);
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.30);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.offers-context-note.info {
+  background: var(--accent-glow, rgba(96, 165, 250, 0.10));
+  border-color: var(--accent);
 }
 
 /* Banner de ahorro/sobrecoste — el dato más importante de la oferta */
@@ -2585,6 +2620,10 @@ html, body {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  /* Reservamos espacio mínimo aunque haya pocos tags, para que las filas
+     (Tipo/Potencia/...) se alineen visualmente entre actual y propuesta. */
+  min-height: 52px;
+  align-content: flex-start;
 }
 .slide-tag {
   font-size: 10px;

@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Escanea el QR de tu factura de la luz y descubre si puedes ahorrar. Gratis, sin registro, sin compromiso.">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#f1f1f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
   <!-- Forzar revalidación del HTML para que index.html siempre traiga el query string actualizado de app.js/styles.css y evitar caché obsoleta -->
   <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -23,7 +24,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260519d">
+  <link rel="stylesheet" href="styles.css?v=20260519e">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -249,6 +250,9 @@
           <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
         </summary>
         <div class="collapsible-content">
+          <!-- Nota contextual según escenario (ya tienes la mejor, no se mejora, etc.) -->
+          <div class="offers-context-note" id="offers-context-note" hidden></div>
+
           <!-- Meta del carrusel: posición usuario + filtros + contador -->
           <div class="offers-meta">
             <div class="offers-position" id="offers-position-info">
@@ -546,6 +550,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260519d"></script>
+  <script src="app.js?v=20260519e"></script>
 </body>
 </html>
