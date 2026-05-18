@@ -101,7 +101,7 @@ async function populateResultMock(page) {
       `<li class="punto punto-${p.type}"><span class="punto-icon">${ICONS[p.type]}</span><span class="punto-text">${p.text}</span></li>`
     ).join('');
 
-    // Mock del carrusel de ofertas (3 slides demo)
+    // Mock del nuevo comparador: actual fijo + propuesta carrusel
     const cur = { company: 'Octopus Energy España', tipo: 'PVPC / Fijo', pot: '3,00 kW', perm: 'Sin permanencia', origen: 'Mix nacional', pago: 590 };
     const offers = [
       { rank: 1, company: 'Energya VM', name: 'Fórmula Fija 24h', amount: 460, second: 542, green: false, perm: false, discount: true },
@@ -111,6 +111,16 @@ async function populateResultMock(page) {
     const fmt = v => v.toLocaleString('es-ES') + ' €';
     document.getElementById('offers-user-rank').textContent = 'puesto ~27';
     document.getElementById('offers-total-count').textContent = '105';
+    // Columna actual (fija)
+    document.getElementById('offers-cur-company').textContent = cur.company;
+    document.getElementById('offers-cur-rows').innerHTML = `
+      <li class="offers-col-row"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${cur.tipo}</span></li>
+      <li class="offers-col-row"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.pot}</span></li>
+      <li class="offers-col-row"><span class="offers-col-key">Permanencia</span><span class="offers-col-value">${cur.perm}</span></li>
+      <li class="offers-col-row"><span class="offers-col-key">Origen</span><span class="offers-col-value">${cur.origen}</span></li>
+      <li class="offers-col-row offers-col-row-total"><span class="offers-col-key">Pago/año</span><span class="offers-col-value">${fmt(cur.pago)}/año</span></li>
+    `;
+    // Slides propuesta
     document.getElementById('offers-track').innerHTML = offers.map(o => {
       const diff = cur.pago - o.amount;
       const tags = [
@@ -121,24 +131,18 @@ async function populateResultMock(page) {
       const pagoNew = o.discount
         ? `${fmt(o.amount)}/año <span class="contract-discount-tag">1er año</span><span class="contract-discount-after">luego ${fmt(o.second)}/año</span>`
         : `${fmt(o.amount)}/año`;
-      return `<article class="carousel-slide">
-        <header class="slide-header">
-          <span class="slide-rank-badge ${o.rank===1?'star':''}">${o.rank===1?'★ #1':'#'+o.rank}</span>
-          <div class="slide-titles">
-            <div class="slide-company">${o.company}</div>
-            <div class="slide-offer-name">${o.name}</div>
-          </div>
-        </header>
+      return `<article class="offers-proposed-slide">
+        <div class="offers-col-tag offers-col-tag-new">Propuesta <span class="slide-rank-badge ${o.rank===1?'star':''}">${o.rank===1?'★ #1':'#'+o.rank}</span></div>
+        <div class="offers-col-company">${o.company}</div>
+        <div class="offers-col-subtitle">${o.name}</div>
         <div class="slide-tags">${tags}</div>
-        <div class="slide-compare">
-          <div class="slide-compare-header"><span class="slide-compare-tag">Actual</span><span class="slide-compare-tag slide-compare-tag-new">Propuesta</span></div>
-          <div class="slide-row"><span class="slide-row-label">Empresa</span><span class="slide-row-current">${cur.company}</span><span class="slide-row-proposed">${o.company}</span></div>
-          <div class="slide-row"><span class="slide-row-label">Tipo</span><span class="slide-row-current">${cur.tipo}</span><span class="slide-row-proposed">Precio fijo</span></div>
-          <div class="slide-row"><span class="slide-row-label">Potencia</span><span class="slide-row-current">${cur.pot}</span><span class="slide-row-proposed">${cur.pot}</span></div>
-          <div class="slide-row"><span class="slide-row-label">Permanencia</span><span class="slide-row-current">${cur.perm}</span><span class="slide-row-proposed">${o.perm?'12 meses':'Sin permanencia'}</span></div>
-          <div class="slide-row ${o.green?'slide-row-good':''}"><span class="slide-row-label">Origen</span><span class="slide-row-current">${cur.origen}</span><span class="slide-row-proposed">${o.green?'100% renovable':'Mix nacional'}</span></div>
-          <div class="slide-row slide-row-total ${diff>0?'slide-row-good':''}"><span class="slide-row-label">Pago/año</span><span class="slide-row-current">${fmt(cur.pago)}/año</span><span class="slide-row-proposed">${pagoNew}</span></div>
-        </div>
+        <ul class="offers-col-rows">
+          <li class="offers-col-row"><span class="offers-col-key">Tipo</span><span class="offers-col-value">Precio fijo</span></li>
+          <li class="offers-col-row"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.pot}</span></li>
+          <li class="offers-col-row"><span class="offers-col-key">Permanencia</span><span class="offers-col-value">${o.perm?'12 meses':'Sin permanencia'}</span></li>
+          <li class="offers-col-row ${o.green?'row-good':''}"><span class="offers-col-key">Origen</span><span class="offers-col-value">${o.green?'100% renovable':'Mix nacional'}</span></li>
+          <li class="offers-col-row offers-col-row-total ${diff>0?'row-good':''}"><span class="offers-col-key">Pago/año</span><span class="offers-col-value">${pagoNew}</span></li>
+        </ul>
         <a href="#" class="slide-cta">Cambiar a ${o.company} →</a>
       </article>`;
     }).join('');

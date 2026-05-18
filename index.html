@@ -23,7 +23,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260519a">
+  <link rel="stylesheet" href="styles.css?v=20260519b">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -242,7 +242,66 @@
       </div>
 
       <!-- === Puntos clave: bullets compactos derivados del análisis === -->
-      <div class="section-block" id="section-puntos-clave">
+      <details class="collapsible-section" id="section-ofertas">
+        <summary class="collapsible-summary">
+          <span class="collapsible-icon" aria-hidden="true">&#x1F4B8;</span>
+          <h3>Mejores ofertas</h3>
+          <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
+        </summary>
+        <div class="collapsible-content">
+          <!-- Meta del carrusel: posición usuario + filtros + contador -->
+          <div class="offers-meta">
+            <div class="offers-position" id="offers-position-info">
+              Tu oferta actual est&aacute; en el <strong id="offers-user-rank">&mdash;</strong>
+              de <strong id="offers-total-count">&mdash;</strong> ofertas analizadas.
+            </div>
+            <div class="offers-filters" id="offers-filters">
+              <button type="button" class="filter-chip active" data-filter="all">Todas</button>
+              <button type="button" class="filter-chip" data-filter="green">&#x1F33F; Verde</button>
+              <button type="button" class="filter-chip" data-filter="noperm">&#x1F513; Sin permanencia</button>
+            </div>
+            <div class="offers-filter-note" id="offers-filter-note" hidden></div>
+          </div>
+
+          <!-- Comparador: columna ACTUAL fija + columna PROPUESTA que rota entre ofertas -->
+          <div class="offers-compare">
+            <!-- Columna fija: tu contrato actual -->
+            <aside class="offers-current" id="offers-current">
+              <div class="offers-col-tag">Tu contrato actual</div>
+              <div class="offers-col-company" id="offers-cur-company">&mdash;</div>
+              <div class="offers-col-subtitle" id="offers-cur-subtitle"></div>
+              <ul class="offers-col-rows" id="offers-cur-rows"></ul>
+            </aside>
+
+            <!-- Columna que rota: propuesta de cada oferta -->
+            <div class="offers-proposed-wrap">
+              <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Oferta anterior">&larr;</button>
+              <div class="offers-proposed-viewport">
+                <div class="offers-proposed-track" id="offers-track"></div>
+              </div>
+              <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Siguiente oferta">&rarr;</button>
+            </div>
+          </div>
+          <div class="carousel-dots" id="offers-dots" role="tablist"></div>
+          <div class="carousel-counter" id="offers-counter"></div>
+
+          <p class="result-best-note">
+            Mostramos precios oficiales seg&uacute;n la CNMC. Algunas comercializadoras tienen
+            ofertas adicionales en su web (descuentos promocionales) que pueden no estar aqu&iacute;
+            reflejadas. <strong>Verifica en su web antes de contratar.</strong>
+          </p>
+        </div>
+      </details>
+
+      <details class="collapsible-section" id="section-analisis">
+        <summary class="collapsible-summary">
+          <span class="collapsible-icon" aria-hidden="true">&#x1F50D;</span>
+          <h3>Nuestro an&aacute;lisis</h3>
+          <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
+        </summary>
+        <div class="collapsible-content">
+          <!-- Puntos clave (al inicio del análisis) -->
+          <div class="puntos-clave-wrap">
         <div class="section-header">
           <h3>Puntos clave</h3>
         </div>
@@ -254,17 +313,9 @@
           </button>
           <ul class="puntos-clave-list puntos-clave-extra" id="puntos-clave-hidden" hidden></ul>
         </div>
-      </div>
+      
+          </div>
 
-      <!-- === Secciones desplegables: análisis + ofertas + perfil === -->
-
-      <details class="collapsible-section" id="section-analisis">
-        <summary class="collapsible-summary">
-          <span class="collapsible-icon" aria-hidden="true">&#x1F50D;</span>
-          <h3>Nuestro an&aacute;lisis</h3>
-          <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
-        </summary>
-        <div class="collapsible-content">
           <div class="insight-card" id="insight-card">
             <span class="insight-label">Diagn&oacute;stico personalizado</span>
             <p id="insight-text">&mdash;</p>
@@ -345,46 +396,6 @@
               <p class="contract-details-footnote">El coste medio (&euro;/kWh) se calcula dividiendo el coste anual entre tu consumo total. Los precios desglosados por periodo (P1/P2/P3) no siempre los publica la comercializadora.</p>
             </div>
           </details>
-        </div>
-      </details>
-
-      <details class="collapsible-section" id="section-ofertas">
-        <summary class="collapsible-summary">
-          <span class="collapsible-icon" aria-hidden="true">&#x1F4B8;</span>
-          <h3>Mejores ofertas</h3>
-          <span class="collapsible-chevron" aria-hidden="true">&#9662;</span>
-        </summary>
-        <div class="collapsible-content">
-          <!-- Meta del carrusel: posición usuario + filtros + contador -->
-          <div class="offers-meta">
-            <div class="offers-position" id="offers-position-info">
-              Tu oferta actual est&aacute; en el <strong id="offers-user-rank">&mdash;</strong>
-              de <strong id="offers-total-count">&mdash;</strong> ofertas analizadas.
-            </div>
-            <div class="offers-filters" id="offers-filters">
-              <button type="button" class="filter-chip active" data-filter="all">Todas</button>
-              <button type="button" class="filter-chip" data-filter="green">&#x1F33F; Verde</button>
-              <button type="button" class="filter-chip" data-filter="noperm">&#x1F513; Sin permanencia</button>
-            </div>
-            <div class="offers-filter-note" id="offers-filter-note" hidden></div>
-          </div>
-
-          <!-- Carrusel: track + flechas + dots -->
-          <div class="offers-carousel">
-            <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Oferta anterior">&larr;</button>
-            <div class="carousel-viewport">
-              <div class="carousel-track" id="offers-track"></div>
-            </div>
-            <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Siguiente oferta">&rarr;</button>
-          </div>
-          <div class="carousel-dots" id="offers-dots" role="tablist"></div>
-          <div class="carousel-counter" id="offers-counter"></div>
-
-          <p class="result-best-note">
-            Mostramos precios oficiales seg&uacute;n la CNMC. Algunas comercializadoras tienen
-            ofertas adicionales en su web (descuentos promocionales) que pueden no estar aqu&iacute;
-            reflejadas. <strong>Verifica en su web antes de contratar.</strong>
-          </p>
         </div>
       </details>
 
@@ -508,6 +519,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260519a"></script>
+  <script src="app.js?v=20260519b"></script>
 </body>
 </html>

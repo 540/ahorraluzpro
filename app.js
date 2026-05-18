@@ -1272,6 +1272,28 @@
     cur: null,           // datos del contrato actual del usuario
   };
 
+  // Filas de la columna IZQUIERDA fija con datos del contrato actual del usuario.
+  // Cada fila tiene un data-row para que la propuesta pueda alinear sus filas
+  // visualmente con la misma altura.
+  function renderCurrentColumn(cur) {
+    setText('offers-cur-company', cur.company);
+    const sub = $('offers-cur-subtitle');
+    if (sub) sub.textContent = '';
+    const rows = $('offers-cur-rows');
+    if (rows) {
+      rows.innerHTML = `
+        <li class="offers-col-row" data-row="tipo"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${glossaryTerm(cur.tipoKey, cur.tipoLabel)}</span></li>
+        <li class="offers-col-row" data-row="potencia"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.potencia}</span></li>
+        <li class="offers-col-row" data-row="permanencia"><span class="offers-col-key">Permanencia</span><span class="offers-col-value">${cur.permanencia}</span></li>
+        <li class="offers-col-row" data-row="origen"><span class="offers-col-key">Origen</span><span class="offers-col-value">${glossaryTerm('mix-nacional', 'Mix nacional')}</span></li>
+        <li class="offers-col-row offers-col-row-total" data-row="pago"><span class="offers-col-key">Pago/año</span><span class="offers-col-value">${formatCurrency(cur.pago)}/año</span></li>
+      `;
+    }
+  }
+
+  // Slide = solo la COLUMNA derecha (propuesta de la oferta). Misma estructura
+  // de filas que el actual, mismas alturas, para que la comparación sea visual
+  // fila a fila aunque el actual sea estático.
   function buildSlideHTML(offer, rank, cur) {
     const features = [];
     if (offer.isGreen) features.push('<span class="slide-tag tag-green">🌿 100% verde</span>');
@@ -1280,7 +1302,7 @@
 
     const diff = cur.pago - offer.amount;
     const diffLabel = diff > 0
-      ? `<span class="slide-diff good">−${formatCurrency(diff)} de ahorro</span>`
+      ? `<span class="slide-diff good">−${formatCurrency(diff)} ahorro</span>`
       : diff < 0
         ? `<span class="slide-diff warn">+${formatCurrency(-diff)} más caro</span>`
         : '';
@@ -1291,54 +1313,32 @@
       : `${formatCurrency(offer.amount)}/año`;
 
     const url = getCompanyUrl(offer.company, offer.offerName);
-    const rankBadge = rank === 1 ? `<span class="slide-rank-badge star">★ #1</span>` : `<span class="slide-rank-badge">#${rank}</span>`;
+    const rankBadge = rank === 1
+      ? `<span class="slide-rank-badge star">★ #1</span>`
+      : `<span class="slide-rank-badge">#${rank}</span>`;
 
     return `
-      <article class="carousel-slide" data-rank="${rank}">
-        <header class="slide-header">
-          ${rankBadge}
-          <div class="slide-titles">
-            <div class="slide-company">${offer.company}</div>
-            <div class="slide-offer-name">${offer.offerName || ''}</div>
-          </div>
-        </header>
+      <article class="offers-proposed-slide" data-rank="${rank}">
+        <div class="offers-col-tag offers-col-tag-new">Propuesta ${rankBadge}</div>
+        <div class="offers-col-company">${offer.company}</div>
+        <div class="offers-col-subtitle">${offer.offerName || ''}</div>
         <div class="slide-tags">${features.join('')}${diffLabel}</div>
-        <div class="slide-compare">
-          <div class="slide-compare-header">
-            <span class="slide-compare-tag">Actual</span>
-            <span class="slide-compare-tag slide-compare-tag-new">Propuesta</span>
-          </div>
-          <div class="slide-row">
-            <span class="slide-row-label">Empresa</span>
-            <span class="slide-row-current">${cur.company}</span>
-            <span class="slide-row-proposed">${offer.company}</span>
-          </div>
-          <div class="slide-row">
-            <span class="slide-row-label">Tipo</span>
-            <span class="slide-row-current">${glossaryTerm(cur.tipoKey, cur.tipoLabel)}</span>
-            <span class="slide-row-proposed">${glossaryTerm('precio-fijo', 'Precio fijo')}</span>
-          </div>
-          <div class="slide-row">
-            <span class="slide-row-label">Potencia</span>
-            <span class="slide-row-current">${cur.potencia}</span>
-            <span class="slide-row-proposed">${cur.potencia}</span>
-          </div>
-          <div class="slide-row ${offer.hasPenalty && cur.permanencia === 'Sin permanencia' ? 'slide-row-warn' : ''}">
-            <span class="slide-row-label">Permanencia</span>
-            <span class="slide-row-current">${cur.permanencia}</span>
-            <span class="slide-row-proposed">${offer.hasPenalty ? '12 meses' : 'Sin permanencia'}</span>
-          </div>
-          <div class="slide-row ${offer.isGreen ? 'slide-row-good' : ''}">
-            <span class="slide-row-label">Origen</span>
-            <span class="slide-row-current">Mix nacional</span>
-            <span class="slide-row-proposed">${offer.isGreen ? '100% renovable' : 'Mix nacional'}</span>
-          </div>
-          <div class="slide-row slide-row-total ${diff > 0 ? 'slide-row-good' : (diff < 0 ? 'slide-row-warn' : '')}">
-            <span class="slide-row-label">Pago/año</span>
-            <span class="slide-row-current">${formatCurrency(cur.pago)}/año</span>
-            <span class="slide-row-proposed">${pagoNuevoHTML}</span>
-          </div>
-        </div>
+        <ul class="offers-col-rows">
+          <li class="offers-col-row" data-row="tipo"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${glossaryTerm('precio-fijo', 'Precio fijo')}</span></li>
+          <li class="offers-col-row" data-row="potencia"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.potencia}</span></li>
+          <li class="offers-col-row ${offer.hasPenalty && cur.permanencia === 'Sin permanencia' ? 'row-warn' : ''}" data-row="permanencia">
+            <span class="offers-col-key">Permanencia</span>
+            <span class="offers-col-value">${offer.hasPenalty ? '12 meses' : 'Sin permanencia'}</span>
+          </li>
+          <li class="offers-col-row ${offer.isGreen ? 'row-good' : ''}" data-row="origen">
+            <span class="offers-col-key">Origen</span>
+            <span class="offers-col-value">${offer.isGreen ? glossaryTerm('100-renovable', '100% renovable') : 'Mix nacional'}</span>
+          </li>
+          <li class="offers-col-row offers-col-row-total ${diff > 0 ? 'row-good' : (diff < 0 ? 'row-warn' : '')}" data-row="pago">
+            <span class="offers-col-key">Pago/año</span>
+            <span class="offers-col-value">${pagoNuevoHTML}</span>
+          </li>
+        </ul>
         <a href="${url}" target="_blank" rel="noopener noreferrer" class="slide-cta">
           Cambiar a ${offer.company} →
         </a>
@@ -1434,6 +1434,8 @@
       ? `puesto ~${results.userRankPosition}`
       : 'puesto desconocido');
 
+    // Columna izquierda (actual) — fija, se pinta una vez
+    renderCurrentColumn(carouselState.cur);
     renderCarouselFrame();
 
     // Wire up event handlers (idempotente: re-bind seguro)
@@ -1578,14 +1580,15 @@
   }
 
   function renderPuntosClave(scenario, qrData, results) {
-    const section = document.getElementById('section-puntos-clave');
-    if (!section) return;
+    // El bloque ahora vive dentro de "Nuestro análisis" (.puntos-clave-wrap)
+    const wrap = document.querySelector('.puntos-clave-wrap');
+    if (!wrap) return;
     const puntos = buildPuntosClave(scenario, results, qrData);
     if (puntos.length === 0) {
-      section.style.display = 'none';
+      wrap.style.display = 'none';
       return;
     }
-    section.style.display = '';
+    wrap.style.display = '';
     const ICONS = { good: '✓', warn: '⚠', tip: '💡', info: 'ℹ' };
     const renderItem = p => `<li class="punto punto-${p.type}"><span class="punto-icon" aria-hidden="true">${ICONS[p.type] || '·'}</span><span class="punto-text">${p.text}</span></li>`;
 
