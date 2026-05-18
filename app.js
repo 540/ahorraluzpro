@@ -41,6 +41,30 @@
     screens[name].classList.add('active');
   }
 
+  // --- Theme toggle (dark/light) ---
+  // Default: respeta prefers-color-scheme del sistema.
+  // Si el usuario clicka el toggle, override en localStorage y sobreescribe.
+  function getCurrentTheme() {
+    const override = (function () {
+      try { return localStorage.getItem('ahorraluz.theme'); } catch (e) { return null; }
+    })();
+    if (override === 'light' || override === 'dark') return override;
+    // Auto: leer del sistema
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  function applyTheme(theme) {
+    if (theme === 'dark' || theme === 'light') {
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem('ahorraluz.theme', theme); } catch (e) {}
+    }
+  }
+  const themeBtn = $('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      applyTheme(getCurrentTheme() === 'light' ? 'dark' : 'light');
+    });
+  }
+
   // --- Navigation ---
   document.getElementById('btn-scan').addEventListener('click', startScanner);
   document.getElementById('btn-back').addEventListener('click', stopAndGoHome);

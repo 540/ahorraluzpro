@@ -5,6 +5,7 @@
    DESIGN TOKENS
    =================================================================== */
 :root {
+  /* Dark theme = default */
   --bg: #09090b;
   --bg-subtle: #0f0f14;
   --bg-card: #141419;
@@ -23,6 +24,7 @@
   --border: rgba(255, 255, 255, 0.06);
   --border-subtle: rgba(255, 255, 255, 0.04);
   --border-accent: rgba(0, 212, 170, 0.2);
+  --on-bg-translucent: rgba(255, 255, 255, 0.2);
   --radius: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
@@ -33,6 +35,113 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================================================================
+   LIGHT THEME — override de variables. Se aplica:
+   - automáticamente si el sistema prefiere light Y no hay override manual
+   - manualmente si data-theme="light" está en <html>
+   =================================================================== */
+:root[data-theme="light"] {
+  --bg: #fafafa;
+  --bg-subtle: #f4f4f5;
+  --bg-card: #ffffff;
+  --bg-card-alt: #f8f8fa;
+  --bg-card-hover: #f0f0f3;
+  --text: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --accent: #009070;
+  --accent-hover: #00a784;
+  --accent-subtle: rgba(0, 144, 112, 0.08);
+  --accent-glow: rgba(0, 144, 112, 0.15);
+  --savings: #059669;
+  --savings-glow: rgba(5, 150, 105, 0.10);
+  --danger: #dc2626;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-accent: rgba(0, 144, 112, 0.25);
+  --on-bg-translucent: rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
+  --shadow-glow: 0 0 32px rgba(0, 144, 112, 0.12);
+}
+
+/* Auto-detect del sistema cuando no hay override manual */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #fafafa;
+    --bg-subtle: #f4f4f5;
+    --bg-card: #ffffff;
+    --bg-card-alt: #f8f8fa;
+    --bg-card-hover: #f0f0f3;
+    --text: #18181b;
+    --text-secondary: #52525b;
+    --text-muted: #71717a;
+    --accent: #009070;
+    --accent-hover: #00a784;
+    --accent-subtle: rgba(0, 144, 112, 0.08);
+    --accent-glow: rgba(0, 144, 112, 0.15);
+    --savings: #059669;
+    --savings-glow: rgba(5, 150, 105, 0.10);
+    --danger: #dc2626;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-subtle: rgba(0, 0, 0, 0.04);
+    --border-accent: rgba(0, 144, 112, 0.25);
+    --on-bg-translucent: rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
+    --shadow-glow: 0 0 32px rgba(0, 144, 112, 0.12);
+  }
+}
+
+/* ===================================================================
+   THEME TOGGLE BUTTON — esquina superior derecha, fijo
+   =================================================================== */
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.05);
+}
+
+.theme-toggle svg { width: 18px; height: 18px; }
+
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+
+:root[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .theme-toggle .icon-sun { display: block; }
+  :root:not([data-theme]) .theme-toggle .icon-moon { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .theme-toggle { top: 20px; right: 24px; }
 }
 
 /* ===================================================================
@@ -2115,7 +2224,7 @@ html, body {
 
 .glossary-text {
   /* Subrayado punteado discreto para indicar que es un término con info */
-  border-bottom: 1px dotted rgba(255, 255, 255, 0.2);
+  border-bottom: 1px dotted var(--on-bg-translucent);
   cursor: help;
 }
 
