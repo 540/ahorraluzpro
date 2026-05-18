@@ -4,6 +4,26 @@
 (function () {
   'use strict';
 
+  // --- DOM helpers defensivos ---
+  // Estos wrappers permiten que el JS siga funcionando aunque el HTML
+  // cacheado en el navegador del usuario esté desfasado y falte algún
+  // elemento. En lugar de petar con "Cannot set properties of null",
+  // se hace log silencioso y se sigue ejecutando.
+  function $(id) { return document.getElementById(id); }
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+    else if (typeof console !== 'undefined') console.warn('Missing element #' + id);
+  }
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+    else if (typeof console !== 'undefined') console.warn('Missing element #' + id);
+  }
+  function addClass(id, cls) { const el = $(id); if (el) el.classList.add(cls); }
+  function removeClass(id, cls) { const el = $(id); if (el) el.classList.remove(cls); }
+  function setDisplay(id, value) { const el = $(id); if (el) el.style.display = value; }
+
   // --- Screens ---
   const screens = {
     landing: document.getElementById('screen-landing'),
@@ -1424,49 +1444,65 @@
 
   function renderCaseAlreadyBest(results, qrData, scenario) {
     const isRank1 = scenario.primaryCase === 'rank-1';
-    const savingsHero = document.getElementById('savings-hero');
-    savingsHero.classList.add('no-savings');
+    addClass('savings-hero', 'no-savings');
     setHero(
       isRank1 ? 'Enhorabuena' : 'Tu tarifa actual',
       isRank1 ? '✓ Tienes la mejor oferta' : 'Entre las mejores tarifas',
       `Puesto #${results.currentCompanyRank} de ${results.totalOffers} ofertas analizadas`,
       null
     );
-
-    document.getElementById('best-header').textContent = isRank1
+    setText('best-header', isRank1
       ? 'Tu oferta actual es la #1'
-      : `Tu oferta actual: puesto #${results.currentCompanyRank}`;
-    const bestBadge = document.getElementById('result-badge');
-    bestBadge.textContent = `#${results.currentCompanyRank} de ${results.totalOffers}`;
-    bestBadge.classList.add('badge-good');
-
-    document.getElementById('alt-header').textContent = 'La competencia (por transparencia)';
-
-    document.getElementById('insight-text').innerHTML = isRank1
+      : `Tu oferta actual: puesto #${results.currentCompanyRank}`);
+    const bestBadge = $('result-badge');
+    if (bestBadge) {
+      bestBadge.textContent = `#${results.currentCompanyRank} de ${results.totalOffers}`;
+      bestBadge.classList.add('badge-good');
+    }
+    setText('alt-header', 'La competencia (por transparencia)');
+    setHTML('insight-text', isRank1
       ? `<strong>${results.current.company} tiene la mejor tarifa del mercado</strong> para tu perfil entre las ${results.totalOffers} ofertas disponibles. No necesitas cambiar nada. Te mostramos la competencia abajo solo por transparencia &mdash; comprueba que estamos siendo honestos contigo.`
-      : `${results.current.company} está en el <strong>puesto #${results.currentCompanyRank} de ${results.totalOffers}</strong>. La diferencia con la #1 es marginal (probablemente <2%), así que el esfuerzo de cambiar no compensa. Repasa la competencia abajo si tienes curiosidad.`;
-
-    document.getElementById('result-savings').style.display = 'none';
-    document.getElementById('section-howto').style.display = 'none';
+      : `${results.current.company} está en el <strong>puesto #${results.currentCompanyRank} de ${results.totalOffers}</strong>. La diferencia con la #1 es marginal (probablemente <2%), así que el esfuerzo de cambiar no compensa. Repasa la competencia abajo si tienes curiosidad.`);
+    setDisplay('result-savings', 'none');
+    setDisplay('section-howto', 'none');
   }
 
   // Helper: aplica los textos del hero con el nuevo orden (sub = cambiando a X,
   // context = mensaje secundario opcional como "X% de más").
   function setHero(label, amount, sub, context) {
-    document.getElementById('savings-hero-label').textContent = label;
-    document.getElementById('savings-hero-amount').textContent = amount;
-    document.getElementById('savings-hero-sub').innerHTML = sub || '';
-    const ctxEl = document.getElementById('savings-hero-context');
+    setText('savings-hero-label', label);
+    setText('savings-hero-amount', amount);
+    setHTML('savings-hero-sub', sub || '');
+    const ctxEl = $('savings-hero-context');
     if (ctxEl) {
       ctxEl.innerHTML = context || '';
       ctxEl.style.display = context ? '' : 'none';
     }
   }
 
+  // Helper común que aplica el chrome común del resultado (badge, alt-header,
+  // insight, howto). Usa los wrappers defensivos para no petar si algún
+  // elemento no está en el DOM (HTML viejo cacheado).
+  function applyResultChrome(opts) {
+    const { heroClassAdd, heroClassRemove, badgeText, badgeGood, bestHeader, altHeader, insightHTML, showHowto } = opts;
+    const hero = $('savings-hero');
+    if (hero) {
+      (heroClassRemove || []).forEach(c => hero.classList.remove(c));
+      (heroClassAdd || []).forEach(c => hero.classList.add(c));
+    }
+    setText('best-header', bestHeader);
+    const badge = $('result-badge');
+    if (badge) {
+      badge.textContent = badgeText;
+      badge.classList.toggle('badge-good', !!badgeGood);
+    }
+    setText('alt-header', altHeader);
+    setHTML('insight-text', insightHTML);
+    setDisplay('result-savings', 'none');
+    setDisplay('section-howto', showHowto ? '' : 'none');
+  }
+
   function renderCaseBigSavings(results, qrData, scenario) {
-    const savingsHero = document.getElementById('savings-hero');
-    savingsHero.classList.remove('no-savings');
-    savingsHero.classList.add('savings-big');
     const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
       'Ahorro disponible',
@@ -1474,20 +1510,18 @@
       `cambiando a <strong>${results.best.company}</strong>`,
       `Estás pagando un <strong>${pct}% de más</strong> que la mejor oferta`
     );
-
-    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
-    const bestBadge = document.getElementById('result-badge');
-    bestBadge.textContent = `#1 de ${results.totalOffers}`;
-    bestBadge.classList.remove('badge-good');
-    document.getElementById('alt-header').textContent = 'También podrías considerar';
-    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
-    document.getElementById('result-savings').style.display = 'none';
-    document.getElementById('section-howto').style.display = '';
+    applyResultChrome({
+      heroClassRemove: ['no-savings'],
+      heroClassAdd: ['savings-big'],
+      bestHeader: 'Mejor oferta del mercado',
+      badgeText: `#1 de ${results.totalOffers}`,
+      altHeader: 'También podrías considerar',
+      insightHTML: buildInsight(results, qrData),
+      showHowto: true,
+    });
   }
 
   function renderCaseNormalSavings(results, qrData, scenario) {
-    const savingsHero = document.getElementById('savings-hero');
-    savingsHero.classList.remove('no-savings', 'savings-big');
     const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
       'Ahorro disponible',
@@ -1495,55 +1529,48 @@
       `cambiando a <strong>${results.best.company}</strong>`,
       `${formatCurrency(results.savings / 12)}/mes · estás pagando un ${pct}% de más`
     );
-
-    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
-    const bestBadge = document.getElementById('result-badge');
-    bestBadge.textContent = `#1 de ${results.totalOffers}`;
-    bestBadge.classList.remove('badge-good');
-    document.getElementById('alt-header').textContent = 'También podrías considerar';
-    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
-    document.getElementById('result-savings').style.display = 'none';
-    document.getElementById('section-howto').style.display = '';
+    applyResultChrome({
+      heroClassRemove: ['no-savings', 'savings-big'],
+      bestHeader: 'Mejor oferta del mercado',
+      badgeText: `#1 de ${results.totalOffers}`,
+      altHeader: 'También podrías considerar',
+      insightHTML: buildInsight(results, qrData),
+      showHowto: true,
+    });
   }
 
   function renderCaseSmallSavings(results, qrData, scenario) {
-    const savingsHero = document.getElementById('savings-hero');
-    savingsHero.classList.remove('no-savings', 'savings-big');
     setHero(
       'Ahorro marginal',
       `${formatCurrency(results.savings)}/año`,
       `cambiando a <strong>${results.best.company}</strong>`,
       `Tu tarifa actual es razonable. Valora si el cambio compensa.`
     );
-
-    document.getElementById('best-header').textContent = 'Mejor oferta del mercado';
-    const bestBadge = document.getElementById('result-badge');
-    bestBadge.textContent = `#1 de ${results.totalOffers}`;
-    bestBadge.classList.remove('badge-good');
-    document.getElementById('alt-header').textContent = 'También podrías considerar';
-    document.getElementById('insight-text').innerHTML = buildInsight(results, qrData);
-    document.getElementById('result-savings').style.display = 'none';
-    document.getElementById('section-howto').style.display = '';
+    applyResultChrome({
+      heroClassRemove: ['no-savings', 'savings-big'],
+      bestHeader: 'Mejor oferta del mercado',
+      badgeText: `#1 de ${results.totalOffers}`,
+      altHeader: 'También podrías considerar',
+      insightHTML: buildInsight(results, qrData),
+      showHowto: true,
+    });
   }
 
   function renderCaseAlreadyCheap(results, qrData, scenario) {
-    const savingsHero = document.getElementById('savings-hero');
-    savingsHero.classList.add('no-savings');
     setHero(
       'Tu tarifa actual',
       'Ya es muy competitiva',
       `No hemos encontrado nada mejor entre ${results.totalOffers} ofertas`,
       null
     );
-
-    document.getElementById('best-header').textContent = 'La oferta más barata del mercado';
-    const bestBadge = document.getElementById('result-badge');
-    bestBadge.textContent = `#1 de ${results.totalOffers}`;
-    document.getElementById('alt-header').textContent = 'Otras ofertas del mercado';
-
-    document.getElementById('insight-text').innerHTML = `Tu tarifa actual cuesta <strong>${formatCurrency(results.current.amount)}/año</strong>, igual o más barata que cualquier oferta de mercado libre. No hay nada que rascar cambiando de comercializadora &mdash; revisa el bloque de análisis adicional por si puedes optimizar otros aspectos.`;
-    document.getElementById('result-savings').style.display = 'none';
-    document.getElementById('section-howto').style.display = 'none';
+    applyResultChrome({
+      heroClassAdd: ['no-savings'],
+      bestHeader: 'La oferta más barata del mercado',
+      badgeText: `#1 de ${results.totalOffers}`,
+      altHeader: 'Otras ofertas del mercado',
+      insightHTML: `Tu tarifa actual cuesta <strong>${formatCurrency(results.current.amount)}/año</strong>, igual o más barata que cualquier oferta de mercado libre. No hay nada que rascar cambiando de comercializadora &mdash; revisa el bloque de análisis adicional por si puedes optimizar otros aspectos.`,
+      showHowto: false,
+    });
   }
 
   // --- Display ---
