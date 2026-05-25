@@ -580,7 +580,16 @@
             </a>
           </div>
         </div>
-        <button id="btn-restart" class="btn-primary">Escanear otra factura</button>
+        <div class="result-cta-row">
+          <button id="btn-share" class="btn-secondary btn-share" type="button">
+            <span class="btn-share-icon" aria-hidden="true">&#128279;</span>
+            <span class="btn-share-text">Copiar enlace de este an&aacute;lisis</span>
+          </button>
+          <button id="btn-restart" class="btn-primary">Escanear otra factura</button>
+        </div>
+        <p class="share-disclaimer" id="share-disclaimer">
+          El enlace contiene los datos del QR (consumo, CUPS, comercializadora). Comp&aacute;rtelo s&oacute;lo con personas autorizadas por el titular.
+        </p>
       </div>
 
       <div class="result-disclaimer">
@@ -604,6 +613,7 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260520a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="app.js?v=20260520b"></script>
 </body>
 </html>

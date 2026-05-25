@@ -2755,6 +2755,55 @@ html, body {
   border-color: rgba(96, 165, 250, 0.3);
 }
 
+/* === Compartir enlace de resultado === */
+.result-cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+@media (min-width: 640px) {
+  .result-cta-row { flex-direction: row-reverse; gap: 12px; }
+  .result-cta-row .btn-primary,
+  .result-cta-row .btn-secondary { flex: 1; }
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: -0.2px;
+}
+.btn-secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--border-accent);
+}
+.btn-secondary.copied {
+  background: var(--savings-glow);
+  border-color: var(--savings);
+  color: var(--savings);
+}
+.btn-share-icon { font-size: 16px; line-height: 1; }
+
+.share-disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 4px 0 0;
+  text-align: center;
+}
+
 .slide-savings-icon {
   flex-shrink: 0;
   font-size: 20px;

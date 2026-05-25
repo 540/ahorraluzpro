@@ -70,11 +70,20 @@
   document.getElementById('btn-back').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-restart').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-retry').addEventListener('click', startScanner);
+  const btnShare = document.getElementById('btn-share');
+  if (btnShare) btnShare.addEventListener('click', copyShareLink);
+
+  // === Compartir enlace: si la URL trae #r=<lz-comprimido> autoejecutamos el
+  //     análisis con los mismos datos del QR original. Esto permite que un
+  //     usuario comparta sus resultados con otro sin necesidad de escanear.
+  //     OJO: se invoca al final del IIFE (línea ~final) porque depende de
+  //     CNMC_QR_BASE (const) que está más abajo en TDZ. ===
+  window.addEventListener('hashchange', tryAutoProcessFromHash);
 
   // Debug hook: en localhost exponemos processQR para que el script
   // scripts/verify-prepush.js pueda reproducir el flow sin pasar por la cámara.
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') {
-    window.__ahorraluzDebug = { processQR, renderCarouselContextNote };
+    window.__ahorraluzDebug = { processQR, renderCarouselContextNote, encodeShareHash, decodeShareHash };
   }
 
   // --- Landing mockup carousel (vistosidad de portada) ---
@@ -204,6 +213,87 @@
   function stopAndGoHome() {
     stopScanner();
     showScreen('landing');
+    // Si veníamos de un enlace compartido, limpiamos el hash para no caer
+    // otra vez en el flujo automático al pulsar "Escanear otra factura".
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  // === Compartir enlace: encode / decode con LZString ===
+  // El hash es el formato más privado (no viaja al servidor) y LZString
+  // comprime los datos a base64 URL-safe. Para ahorrar bytes guardamos sólo
+  // el querystring del QR — la base URL del CNMC se reconstruye al decode.
+  const CNMC_QR_BASE = 'https://comparador.cnmc.gob.es/comparador/QRE?';
+
+  function encodeShareHash(qrUrl) {
+    if (!qrUrl || typeof LZString === 'undefined') return null;
+    // Si la URL viene con la base estándar, guardamos solo el querystring.
+    const idx = qrUrl.indexOf('?');
+    const payload = qrUrl.startsWith(CNMC_QR_BASE) && idx >= 0 ? qrUrl.slice(idx + 1) : qrUrl;
+    return '#r=' + LZString.compressToEncodedURIComponent(payload);
+  }
+  function decodeShareHash(hash) {
+    if (!hash || hash.indexOf('#r=') !== 0 || typeof LZString === 'undefined') return null;
+    try {
+      const compressed = hash.slice(3);
+      const decoded = LZString.decompressFromEncodedURIComponent(compressed);
+      if (!decoded) return null;
+      // Si parece un querystring suelto, reconstruimos la URL del CNMC.
+      if (decoded.startsWith('http')) return decoded;
+      if (decoded.includes('cp=') || decoded.includes('cups=')) return CNMC_QR_BASE + decoded;
+      return null;
+    } catch (_) { return null; }
+  }
+  function tryAutoProcessFromHash() {
+    if (!location.hash || location.hash.indexOf('#r=') !== 0) return;
+    // Esperamos a que LZString esté disponible (el CDN puede tardar) hasta
+    // 3s con poll de 50ms. Después decodificamos y procesamos el QR.
+    const start = Date.now();
+    const tryDecode = () => {
+      if (typeof LZString === 'undefined') {
+        if (Date.now() - start < 3000) return setTimeout(tryDecode, 50);
+        console.warn('Enlace compartido: LZString no se cargó (CDN bloqueado?)');
+        return;
+      }
+      const url = decodeShareHash(location.hash);
+      if (!url) { console.warn('Enlace compartido: hash inválido'); return; }
+      processQR(url).catch(e => console.error('Enlace compartido falló:', e));
+    };
+    tryDecode();
+  }
+  async function copyShareLink() {
+    const btn = $('btn-share');
+    if (!lastProcessedQrUrl) {
+      if (btn) {
+        const txt = btn.querySelector('.btn-share-text');
+        if (txt) txt.textContent = 'No hay datos para compartir todavía';
+      }
+      return;
+    }
+    const hash = encodeShareHash(lastProcessedQrUrl);
+    if (!hash) {
+      if (btn) {
+        const txt = btn.querySelector('.btn-share-text');
+        if (txt) txt.textContent = 'No se pudo generar el enlace';
+      }
+      return;
+    }
+    const fullUrl = location.origin + location.pathname + hash;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      if (btn) {
+        btn.classList.add('copied');
+        const txt = btn.querySelector('.btn-share-text');
+        const original = txt ? txt.textContent : '';
+        if (txt) txt.textContent = '¡Enlace copiado!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          if (txt) txt.textContent = original;
+        }, 2200);
+      }
+    } catch (e) {
+      // Fallback: prompt manual
+      window.prompt('Copia este enlace:', fullUrl);
+    }
   }
 
   // --- QR Scanner (BarcodeDetector native API + jsQR fallback) ---
@@ -694,7 +784,12 @@
   }
 
   // --- Process QR ---
+  // Guardamos la última URL procesada para poder generar el enlace de
+  // compartir desde la pantalla de resultados.
+  let lastProcessedQrUrl = null;
+
   async function processQR(url) {
+    lastProcessedQrUrl = url;
     showScreen('loading');
     resetLoadingSteps();
 
@@ -2698,5 +2793,9 @@
       maximumFractionDigits: 0,
     }).format(Math.round(amount));
   }
+
+  // Al final del IIFE: ya están inicializadas todas las const/let de TDZ
+  // (CNMC_QR_BASE, etc.). Es seguro intentar el auto-process del hash.
+  tryAutoProcessFromHash();
 
 })();
