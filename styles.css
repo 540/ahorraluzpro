@@ -781,6 +781,61 @@ html, body {
   overflow: hidden;
 }
 
+/* Card de oferta sospechosa: cuando hay una oferta más barata pero con
+   condiciones (promo de placas solares, "free", outlier de precio). */
+.suspect-offer-card {
+  margin: -16px 0 28px;
+  padding: 14px 16px;
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suspect-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.suspect-card-icon {
+  font-size: 18px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+.suspect-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+[data-theme="dark"] .suspect-card-label { color: #fcd34d; }
+.suspect-card-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.suspect-card-offer { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.suspect-card-company { font-size: 15px; font-weight: 700; color: var(--text); }
+.suspect-card-tariff { font-size: 13px; color: var(--text-muted); }
+.suspect-card-amount { text-align: right; }
+.suspect-card-saving { font-size: 17px; font-weight: 700; color: #d97706; display: block; }
+[data-theme="dark"] .suspect-card-saving { color: #fcd34d; }
+.suspect-card-aftermath { font-size: 12px; color: var(--text-muted); display: block; }
+.suspect-card-reason {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px dashed rgba(251, 191, 36, 0.3);
+}
+
 .savings-hero::before {
   content: '';
   position: absolute;
@@ -2442,6 +2497,262 @@ html, body {
 .slide-savings-banner.neutral {
   background: var(--bg-subtle);
   border: 1px solid var(--border-subtle);
+}
+.slide-savings-banner.suspect {
+  background: rgba(251, 191, 36, 0.10);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+.slide-savings-banner.suspect .slide-savings-amount { color: #d97706; font-size: 15px; }
+[data-theme="dark"] .slide-savings-banner.suspect .slide-savings-amount { color: #fcd34d; }
+.slide-savings-banner.suspect .slide-savings-detail { color: var(--text); line-height: 1.45; }
+
+/* Slide sospechoso: marco amarillo discreto + atenuación visual */
+.offers-proposed-slide.suspect { border: 1px solid rgba(251, 191, 36, 0.3); }
+
+/* CTA cuando la oferta es sospechosa: amarillo en vez de verde */
+.slide-cta-suspect {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+[data-theme="dark"] .slide-cta-suspect { color: #fcd34d !important; }
+
+/* === Tabla de desglose (acordeón ¿Por qué te ahorras?) === */
+.slide-breakdown {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.slide-breakdown[open] { border-color: var(--border-accent); }
+.slide-breakdown-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.slide-breakdown-summary::-webkit-details-marker { display: none; }
+.slide-breakdown-summary:hover { background: rgba(0,0,0,0.02); }
+[data-theme="dark"] .slide-breakdown-summary:hover { background: rgba(255,255,255,0.03); }
+.slide-breakdown-icon { font-size: 16px; flex-shrink: 0; }
+.slide-breakdown-summary > span:nth-child(2) { flex: 1; }
+.slide-breakdown-chevron {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 220ms ease;
+}
+.slide-breakdown[open] .slide-breakdown-chevron { transform: rotate(180deg); }
+.slide-breakdown-content {
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+.slide-breakdown-headline {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.slide-breakdown-headline strong { color: var(--savings); }
+.slide-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.slide-breakdown-table th,
+.slide-breakdown-table td {
+  padding: 6px 4px;
+  text-align: right;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.slide-breakdown-table thead th {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-align: right;
+}
+.slide-breakdown-table thead th:first-child,
+.slide-breakdown-table tbody th,
+.slide-breakdown-table tfoot th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text);
+}
+.slide-breakdown-table tbody th { font-size: 12px; }
+.slide-breakdown-table tfoot th { font-weight: 700; padding-top: 8px; }
+.slide-breakdown-table tfoot td { font-weight: 700; padding-top: 8px; border-bottom: none; }
+.slide-breakdown-table .td-delta { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.slide-breakdown-table .row-saves .td-delta { color: var(--savings); }
+.slide-breakdown-table .row-costs .td-delta { color: #d97706; }
+.slide-breakdown-disclaimer {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* === Simulador de potencia (sección "Tu perfil") === */
+.power-sim-section {}
+.power-sim-reco {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.power-sim-reco.reco-warn {
+  background: rgba(251, 191, 36, 0.10);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: var(--text);
+}
+.power-sim-reco.reco-save {
+  background: var(--savings-glow);
+  border: 1px solid var(--savings);
+  color: var(--text);
+}
+.power-sim-reco.reco-ok {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.power-sim-reco strong { color: var(--text-strong); }
+.power-sim-reco .reco-headline { display: block; font-weight: 700; margin-bottom: 4px; }
+.power-sim-reco .reco-impact { display: block; font-weight: 600; font-size: 13px; margin-top: 6px; }
+
+.power-sim-slider-wrap {
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.power-sim-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.power-sim-meta-item { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.power-sim-meta-item.power-sim-meta-cost { text-align: right; align-items: flex-end; }
+.power-sim-meta-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.power-sim-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-strong);
+  line-height: 1;
+}
+.power-sim-unit { font-size: 12px; color: var(--text-muted); }
+.power-sim-cost {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-strong);
+  line-height: 1;
+}
+.power-sim-delta {
+  font-size: 12px;
+  font-weight: 600;
+}
+.power-sim-delta.delta-up { color: #d97706; }
+.power-sim-delta.delta-down { color: var(--savings); }
+
+.power-sim-slider {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 8px;
+  background: var(--border);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+}
+.power-sim-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.power-sim-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.power-sim-marks {
+  position: relative;
+  height: 26px;
+  margin-top: 8px;
+}
+.power-sim-mark {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 10px;
+  top: 0;
+}
+.power-sim-mark.mark-current {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.power-sim-mark.mark-pico {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #92400e;
+  top: 14px;
+}
+[data-theme="dark"] .power-sim-mark.mark-pico { color: #fcd34d; }
+.power-sim-mark.hidden { display: none; }
+
+.power-sim-feedback {
+  margin-top: 16px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-height: 38px;
+}
+.power-sim-feedback.fb-warn {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+.power-sim-feedback.fb-good {
+  background: var(--savings-glow);
+  border-color: var(--savings);
+}
+.power-sim-feedback.fb-tip {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.3);
 }
 
 .slide-savings-icon {
