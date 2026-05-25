@@ -5,34 +5,41 @@
    DESIGN TOKENS
    =================================================================== */
 :root {
-  /* Light theme = default. CONTRASTE alto: bordes oscuros y sombras
-     profundas para que cada card se distinga del fondo con claridad. */
-  --bg: #e2e4e8;
-  --bg-subtle: #d4d6db;
+  /* Light theme = default. Inspiración Stripe/Linear/Vercel:
+     - Fondo gris muy ligero (no blanco puro, descansa la vista)
+     - Cards en blanco puro con sombra suave y borde sutil
+     - Texto oscurísimo para máxima legibilidad
+     - Verde profundo saturado solo para acentos clave */
+  --bg: #f4f5f7;
+  --bg-subtle: #edeef1;
   --bg-card: #ffffff;
-  --bg-card-alt: #f0f1f4;
-  --bg-card-hover: #e5e7ec;
-  --text: #0a0a0d;
-  --text-secondary: #2f2f36;
-  --text-muted: #4b4b52;
+  --bg-card-alt: #fafbfc;
+  --bg-card-hover: #f5f6f8;
+  --text: #0a0a0c;
+  --text-secondary: #44444c;
+  --text-muted: #686870;
   --accent: #006a55;
   --accent-hover: #008066;
-  --accent-subtle: rgba(0, 106, 85, 0.14);
-  --accent-glow: rgba(0, 106, 85, 0.28);
+  --accent-subtle: rgba(0, 106, 85, 0.10);
+  --accent-glow: rgba(0, 106, 85, 0.18);
   --savings: #047857;
-  --savings-glow: rgba(4, 120, 87, 0.18);
-  --danger: #991b1b;
-  --border: rgba(0, 0, 0, 0.34);
-  --border-subtle: rgba(0, 0, 0, 0.20);
-  --border-accent: rgba(0, 106, 85, 0.6);
-  --on-bg-translucent: rgba(0, 0, 0, 0.42);
+  --savings-glow: rgba(4, 120, 87, 0.12);
+  --danger: #b91c1c;
+  --border: rgba(0, 0, 0, 0.10);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-accent: rgba(0, 106, 85, 0.42);
+  --on-bg-translucent: rgba(0, 0, 0, 0.30);
   --radius: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.14);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.28), 0 8px 20px rgba(0, 0, 0, 0.18);
-  --shadow-glow: 0 0 32px rgba(0, 106, 85, 0.24);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 14px 34px rgba(15, 23, 42, 0.12), 0 6px 14px rgba(15, 23, 42, 0.07);
+  --shadow-glow: 0 0 28px rgba(0, 106, 85, 0.18);
+  /* Aliases por compatibilidad con CSS que usa nombres antiguos */
+  --surface: var(--bg-card);
+  --surface-2: var(--bg-card-alt);
+  --text-strong: var(--text);
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -44,8 +51,8 @@
    - automáticamente si el sistema prefiere dark Y no hay override manual
    =================================================================== */
 :root[data-theme="dark"] {
-  --bg: #06060a;
-  --bg-subtle: #0d0d12;
+  --bg: #08080b;
+  --bg-subtle: #11111a;
   --bg-card: #181820;
   --bg-card-alt: #1f1f28;
   --bg-card-hover: #25252e;
@@ -3337,7 +3344,7 @@ html, body {
 /* Diagnóstico: bloque destacado arriba con borde lateral verde */
 .analisis-diagnostic {
   padding: 14px 16px;
-  background: var(--bg-subtle);
+  background: var(--accent-subtle);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
 }
