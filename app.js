@@ -1884,16 +1884,34 @@
     const track = $('offers-track');
     if (!track) return;
     track.style.transform = `translateX(-${carouselState.currentIndex * 100}%)`;
-    // Update active dot
     document.querySelectorAll('.carousel-dot').forEach((d, i) => {
       d.classList.toggle('active', i === carouselState.currentIndex);
     });
-    // Counter
     setText('offers-counter', `${carouselState.currentIndex + 1} de ${carouselState.offers.length}`);
-    // Disable arrows at edges
     const prev = $('carousel-prev'); const next = $('carousel-next');
     if (prev) prev.disabled = carouselState.currentIndex === 0;
     if (next) next.disabled = carouselState.currentIndex >= carouselState.offers.length - 1;
+    // Reactivo: refrescar el análisis para reflejar el slide visible.
+    refreshAnalysisForCurrentSlide();
+  }
+
+  // Refresca insight + puntos clave para la oferta actualmente visible en el
+  // carrusel. Llamado desde updateCarouselPosition() y desde applyFilter().
+  function refreshAnalysisForCurrentSlide() {
+    const offer = carouselState.offers[carouselState.currentIndex];
+    if (!offer || !carouselState.results || !carouselState.qrData) return;
+    const results = carouselState.results;
+    const qrData = carouselState.qrData;
+    const scenario = carouselState.scenario;
+    setHTML('insight-text', buildInsight(results, qrData, offer));
+    renderPuntosClave(scenario, qrData, results, offer);
+    // Pill contextual: deja claro al usuario que el análisis es para esa oferta.
+    const pill = $('analisis-context-pill');
+    const pillVal = $('analisis-context-offer');
+    if (pill && pillVal) {
+      pillVal.textContent = `${offer.company}${offer.offerName ? ' · ' + offer.offerName : ''}`;
+      pill.hidden = false;
+    }
   }
 
   function navigateCarousel(direction) {
@@ -1993,9 +2011,14 @@
     carouselState.allOffers = results.topOffers;
     carouselState.cur = buildCurrentContractView(qrData, results);
     carouselState.qrData = qrData;
+    carouselState.results = results;
+    carouselState.scenario = scenario;
     carouselState.filter = 'all';
-    carouselState.currentIndex = 0;
     carouselState.offers = results.topOffers.slice();
+    // Arrancar en la primera oferta LEGÍTIMA (no en la sospechosa). Así el
+    // análisis reactivo encaja con lo que el hero ya está afirmando.
+    const firstLegitIdx = carouselState.offers.findIndex(o => !o.suspect);
+    carouselState.currentIndex = firstLegitIdx >= 0 ? firstLegitIdx : 0;
 
     // Meta: posición usuario
     setText('offers-total-count', results.totalOffers);
@@ -2061,10 +2084,20 @@
   // Cada modifier aplicable se traduce en una línea con tipo (good/warn/tip/info)
   // y prioridad para ordenarlos. Los 5 primeros se muestran; el resto va a un
   // "Ver más" desplegable.
-  function buildPuntosClave(scenario, results, qrData) {
+  // displayOffer (opcional) → si se pasa, los puntos clave se generan para
+  // esa oferta concreta. Útil para que el bloque de hallazgos reaccione al
+  // slide actual del carrusel. Sin él, usamos la mejor legítima como antes.
+  function buildPuntosClave(scenario, results, qrData, displayOffer) {
     const m = scenario.modifiers || {};
-    const best = results && results.best;
+    const best = displayOffer || (results && (results.legitimateBest || results.best));
     const puntos = [];
+
+    // Si la oferta seleccionada es sospechosa (Solar Free, outlier), avisamos
+    // explícitamente en el primer hallazgo.
+    if (best && best.suspect) {
+      puntos.push({ type: 'warn', priority: 0,
+        text: `${best.offerName || best.company} es una promoción condicional — verifica requisitos antes de contar con este ahorro` });
+    }
 
     if (m.sameCompanyBest && results && results.savings > 0) {
       puntos.push({ type: 'good', priority: 1,
@@ -2159,11 +2192,11 @@
     return puntos;
   }
 
-  function renderPuntosClave(scenario, qrData, results) {
+  function renderPuntosClave(scenario, qrData, results, displayOffer) {
     // El bloque ahora vive dentro de "Nuestro análisis" (.puntos-clave-wrap)
     const wrap = document.querySelector('.puntos-clave-wrap');
     if (!wrap) return;
-    const puntos = buildPuntosClave(scenario, results, qrData);
+    const puntos = buildPuntosClave(scenario, results, qrData, displayOffer);
     if (puntos.length === 0) {
       wrap.style.display = 'none';
       return;
@@ -2536,39 +2569,53 @@
   }
 
   // --- Personalized insight ---
-  function buildInsight(results, qrData) {
+  // El par\u00e1metro displayOffer permite generar el diagn\u00f3stico para CUALQUIER
+  // oferta del carrusel, no s\u00f3lo para la "mejor". Cuando el usuario navega
+  // el carrusel, refrescamos esto con la oferta visible. Si no se pasa,
+  // usamos la leg\u00edtima/best por defecto (comportamiento hist\u00f3rico).
+  function buildInsight(results, qrData, displayOffer) {
     const parts = [];
-    const savings = results.savings;
     const current = results.current;
-    const best = results.best;
+    const best = displayOffer || results.legitimateBest || results.best;
+    const savings = current.amount - best.amount;
 
-    if (savings > 0) {
-      const bestName = best.offerName ? `<strong>${best.offerName}</strong> de ${best.company}` : best.company;
-      parts.push(`Est\u00e1s pagando <strong>${formatCurrency(current.amount)}/a\u00f1o</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
-      parts.push(`Podr\u00edas pagar <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> con ${bestName}. Eso son <strong>${formatCurrency(savings)} menos al a\u00f1o</strong>.`);
-
-      if (results.currentCompanyRank) {
-        parts.push(`La mejor oferta de ${current.company} est\u00e1 en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
-      }
-
-      // Explain WHY this offer is good for their profile
-      if (qrData) {
-        const total = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
-        if (total > 0) {
-          const pctValle = Math.round(qrData.consumoAnualP3 / total * 100);
-          const pctPunta = Math.round(qrData.consumoAnualP1 / total * 100);
-          if (pctValle >= 40) {
-            parts.push(`El <strong>${pctValle}%</strong> de tu consumo es en horario valle (noches y fines de semana), por lo que te conviene una tarifa que premie ese horario.`);
-          } else if (pctPunta >= 40) {
-            parts.push(`El <strong>${pctPunta}%</strong> de tu consumo es en horario punta. Una tarifa con precio \u00fanico te protege de los precios altos en esas horas.`);
-          } else {
-            parts.push(`Tu consumo est\u00e1 bastante repartido entre horarios. Una tarifa con precio fijo \u00fanico puede darte estabilidad.`);
-          }
-        }
-      }
+    if (best.suspect) {
+      parts.push(`<strong>${best.company} \u00b7 ${best.offerName || ''}</strong> aparece como la m\u00e1s barata (${formatCurrency(best.amount)}/a\u00f1o), pero es una <strong>promoci\u00f3n condicional</strong>. Verifica los requisitos en la web de la comercializadora antes de contar con ese ahorro.`);
+      if (qrData) addConsumoProfile(parts, qrData);
+      return parts.join(' ');
     }
 
+    const bestName = best.offerName ? `<strong>${best.offerName}</strong> de ${best.company}` : best.company;
+    parts.push(`Est\u00e1s pagando <strong>${formatCurrency(current.amount)}/a\u00f1o</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
+
+    if (savings > 0) {
+      parts.push(`Con ${bestName} pagar\u00edas <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> &mdash; <strong>${formatCurrency(savings)} menos al a\u00f1o</strong> (${formatCurrency(savings / 12)}/mes).`);
+    } else if (savings < 0) {
+      parts.push(`Con ${bestName} pagar\u00edas <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> &mdash; ser\u00edan <strong>${formatCurrency(-savings)} m\u00e1s al a\u00f1o</strong> de los que pagas hoy.`);
+    } else {
+      parts.push(`Con ${bestName} pagar\u00edas pr\u00e1cticamente lo mismo que ahora.`);
+    }
+
+    if (results.currentCompanyRank) {
+      parts.push(`Tu comercializadora actual (${current.company}) tiene su mejor oferta en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
+    }
+
+    if (qrData) addConsumoProfile(parts, qrData);
     return parts.join(' ');
+  }
+
+  function addConsumoProfile(parts, qrData) {
+    const total = qrData.consumoAnualP1 + qrData.consumoAnualP2 + qrData.consumoAnualP3;
+    if (total <= 0) return;
+    const pctValle = Math.round(qrData.consumoAnualP3 / total * 100);
+    const pctPunta = Math.round(qrData.consumoAnualP1 / total * 100);
+    if (pctValle >= 40) {
+      parts.push(`El <strong>${pctValle}%</strong> de tu consumo es en horario valle (noches y fines de semana), por lo que te conviene una tarifa que premie ese horario.`);
+    } else if (pctPunta >= 40) {
+      parts.push(`El <strong>${pctPunta}%</strong> de tu consumo es en horario punta. Una tarifa con precio \u00fanico te protege de los precios altos en esas horas.`);
+    } else {
+      parts.push(`Tu consumo est\u00e1 bastante repartido entre horarios. Una tarifa con precio fijo \u00fanico puede darte estabilidad.`);
+    }
   }
 
   // --- BBDD de URLs oficiales por comercializadora ---
