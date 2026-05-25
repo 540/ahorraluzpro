@@ -1746,12 +1746,16 @@
             : `Te ahorras ${formatCurrency(totalSaving)}/año por menor coste de <strong>peajes e impuestos</strong>.`)
       : `Esta oferta cuesta ${formatCurrency(-totalSaving)}/año más que tu tarifa actual.`;
 
+    // data-label en cada celda → en mobile la tabla se reformatea como lista
+    // vertical (label + valores apilados) sin perder semántica.
+    const colTu = 'Tu factura';
+    const colNueva = `Con ${offer.company}`;
     const rowHTML = rows.map(r => `
       <tr class="${r.delta > 0 ? 'row-saves' : r.delta < 0 ? 'row-costs' : ''}">
         <th scope="row">${r.label}</th>
-        <td>${formatCurrency(r.current)}</td>
-        <td>${r.newEstimated != null ? '~' + formatCurrency(r.newEstimated) : '—'}</td>
-        <td class="td-delta">${r.delta !== 0 ? (r.delta > 0 ? '−' : '+') + formatCurrency(Math.abs(r.delta)) : '—'}</td>
+        <td data-label="${colTu}">${formatCurrency(r.current)}</td>
+        <td data-label="${colNueva}">${r.newEstimated != null ? '~' + formatCurrency(r.newEstimated) : '—'}</td>
+        <td class="td-delta" data-label="Diferencia">${r.delta !== 0 ? (r.delta > 0 ? '−' : '+') + formatCurrency(Math.abs(r.delta)) : '—'}</td>
       </tr>
     `).join('');
 
@@ -1768,8 +1772,8 @@
             <thead>
               <tr>
                 <th></th>
-                <th>Tu factura</th>
-                <th>Con ${offer.company}</th>
+                <th>${colTu}</th>
+                <th>${colNueva}</th>
                 <th>Δ</th>
               </tr>
             </thead>
@@ -1777,9 +1781,9 @@
             <tfoot>
               <tr>
                 <th>Total anual</th>
-                <td>${formatCurrency(cur.pago)}</td>
-                <td><strong>${formatCurrency(offer.amount)}</strong></td>
-                <td class="td-delta">${totalSaving > 0 ? '−' + formatCurrency(totalSaving) : '+' + formatCurrency(-totalSaving)}</td>
+                <td data-label="${colTu}">${formatCurrency(cur.pago)}</td>
+                <td data-label="${colNueva}"><strong>${formatCurrency(offer.amount)}</strong></td>
+                <td class="td-delta" data-label="Diferencia">${totalSaving > 0 ? '−' + formatCurrency(totalSaving) : '+' + formatCurrency(-totalSaving)}</td>
               </tr>
             </tfoot>
           </table>
