@@ -3154,6 +3154,46 @@ html, body {
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
 }
+
+/* Pill contextual encima del diagnóstico: indica qué oferta del carrusel
+   se está analizando. Le da feedback al usuario de que el bloque es REACTIVO. */
+.analisis-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.4;
+  flex-wrap: wrap;
+}
+.analisis-context-pill .ctx-pill-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.analisis-context-pill .ctx-pill-value {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.analisis-context-pill .ctx-pill-hint {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Sección de potencia dentro de Análisis (antes vivía en Perfil) */
+.analisis-power { margin-top: 4px; }
+.analisis-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.analisis-section-head .analisis-section-label { margin-bottom: 0; }
 .analisis-diagnostic .analisis-section-label {
   color: var(--accent);
   margin-bottom: 6px;
