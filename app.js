@@ -4,6 +4,19 @@
 (function () {
   'use strict';
 
+  // --- Analytics (Vercel Web Analytics) ---
+  // Helper para enviar eventos custom. El stub de window.va está en index.html
+  // y encola las llamadas hasta que el script defer carga; aquí solo invocamos.
+  // En localhost el dashboard ignora los hits (modo debug), pero el helper sigue
+  // funcionando sin errores.
+  function track(name, props) {
+    try {
+      if (typeof window.va === 'function') {
+        window.va('event', Object.assign({ name: name }, props || {}));
+      }
+    } catch (_) { /* nunca debe romper el flow del usuario */ }
+  }
+
   // --- DOM helpers defensivos ---
   // Estos wrappers permiten que el JS siga funcionando aunque el HTML
   // cacheado en el navegador del usuario esté desfasado y falte algún
@@ -66,7 +79,36 @@
   }
 
   // --- Navigation ---
-  document.getElementById('btn-scan').addEventListener('click', startScanner);
+  document.getElementById('btn-scan').addEventListener('click', () => {
+    track('scan_click');
+    startScanner();
+  });
+
+  // Analytics: trackear click en cualquier CTA de oferta (slide del carrusel
+  // o el botón principal "Cambiar a X" del footer). Delegación en document
+  // porque los slides se renderizan dinámicamente.
+  document.addEventListener('click', e => {
+    const slideCta = e.target.closest('.slide-cta');
+    if (slideCta) {
+      const slide = slideCta.closest('.offers-proposed-slide');
+      const company = slide ? slide.querySelector('.offers-col-company')?.textContent : null;
+      track('open_offer', {
+        company: company || 'desconocida',
+        source: 'carousel',
+        rank: slide ? slide.dataset.rank : null,
+        suspect: slideCta.classList.contains('slide-cta-suspect'),
+      });
+      return;
+    }
+    const howtoCta = e.target.closest('#howto-cta-link');
+    if (howtoCta) {
+      const txt = howtoCta.querySelector('.howto-cta-text')?.textContent || '';
+      track('open_offer', {
+        company: txt.replace(/^Cambiar a /, ''),
+        source: 'howto-cta',
+      });
+    }
+  });
   document.getElementById('btn-back').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-restart').addEventListener('click', stopAndGoHome);
   document.getElementById('btn-retry').addEventListener('click', startScanner);
@@ -280,6 +322,7 @@
     const fullUrl = location.origin + location.pathname + hash;
     try {
       await navigator.clipboard.writeText(fullUrl);
+      track('share_copied', { method: 'clipboard' });
       if (btn) {
         btn.classList.add('copied');
         const txt = btn.querySelector('.btn-share-text');
@@ -293,6 +336,7 @@
     } catch (e) {
       // Fallback: prompt manual
       window.prompt('Copia este enlace:', fullUrl);
+      track('share_copied', { method: 'prompt-fallback' });
     }
   }
 
@@ -892,6 +936,18 @@
       displayConsumption(qrData, companyName);
       displayResults(results, qrData);
       displayRecomendaciones(qrData);
+
+      // Analytics: el flow llegó hasta el resultado. Mandamos contexto
+      // anonimizado (sin CUPS ni CP exactos) para entender qué casuísticas
+      // ven más los usuarios.
+      track('qr_processed', {
+        currentCompany: results.current.company,
+        savings: Math.round(results.legitimateSavings != null ? results.legitimateSavings : results.savings),
+        totalOffers: results.totalOffers,
+        userRank: results.userRankPosition,
+        heroMode: results.heroMode,
+        hasSuspect: results.heroMode === 'dual',
+      });
 
     } catch (e) {
       console.error('Error processing QR:', e);
@@ -1914,9 +1970,9 @@
   }
 
   function renderCarouselFrame() {
-    const track = $('offers-track');
-    if (!track) return;
-    track.innerHTML = carouselState.offers
+    const trackEl = $('offers-track');
+    if (!trackEl) return;
+    trackEl.innerHTML = carouselState.offers
       .map((offer, i) => buildSlideHTML(offer, i + 1, carouselState.cur, carouselState.qrData))
       .join('');
     // Dots
@@ -1930,9 +1986,9 @@
   }
 
   function updateCarouselPosition() {
-    const track = $('offers-track');
-    if (!track) return;
-    track.style.transform = `translateX(-${carouselState.currentIndex * 100}%)`;
+    const trackEl = $('offers-track');
+    if (!trackEl) return;
+    trackEl.style.transform = `translateX(-${carouselState.currentIndex * 100}%)`;
     document.querySelectorAll('.carousel-dot').forEach((d, i) => {
       d.classList.toggle('active', i === carouselState.currentIndex);
     });
@@ -1942,6 +1998,17 @@
     if (next) next.disabled = carouselState.currentIndex >= carouselState.offers.length - 1;
     // Reactivo: refrescar el análisis para reflejar el slide visible.
     refreshAnalysisForCurrentSlide();
+    // Analytics: emitir solo cuando cambia la oferta visible (no en cada re-render
+    // que dispara updateCarouselPosition con el mismo índice).
+    const off = carouselState.offers[carouselState.currentIndex];
+    if (off && carouselState._lastTrackedIdx !== carouselState.currentIndex) {
+      carouselState._lastTrackedIdx = carouselState.currentIndex;
+      track('carousel_slide', {
+        index: carouselState.currentIndex,
+        company: off.company,
+        suspect: !!off.suspect,
+      });
+    }
   }
 
   // Refresca insight + puntos clave para la oferta actualmente visible en el
