@@ -24,7 +24,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260519e">
+  <link rel="stylesheet" href="styles.css?v=20260520a">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -222,6 +222,25 @@
         <div class="savings-hero-sub" id="savings-hero-sub"></div>
         <div class="savings-hero-context" id="savings-hero-context"></div>
       </div>
+
+      <!-- === 1b. Aviso: oferta con condiciones especiales (cuando la #1 es sospechosa) === -->
+      <aside class="suspect-offer-card" id="suspect-offer-card" hidden>
+        <div class="suspect-card-header">
+          <span class="suspect-card-icon" aria-hidden="true">&#9888;</span>
+          <span class="suspect-card-label">Hay una oferta a&uacute;n m&aacute;s barata, pero con condiciones</span>
+        </div>
+        <div class="suspect-card-body">
+          <div class="suspect-card-offer">
+            <span class="suspect-card-company" id="suspect-card-company">&mdash;</span>
+            <span class="suspect-card-tariff" id="suspect-card-tariff">&mdash;</span>
+          </div>
+          <div class="suspect-card-amount">
+            <span class="suspect-card-saving" id="suspect-card-saving">&mdash;</span>
+            <span class="suspect-card-aftermath" id="suspect-card-aftermath">&mdash;</span>
+          </div>
+        </div>
+        <p class="suspect-card-reason" id="suspect-card-reason">&mdash;</p>
+      </aside>
 
       <!-- === 2. Comparativa: Actual vs Mejor (empresa destacada, tarifa pequeña debajo) === -->
       <div class="comparison-grid">
@@ -457,6 +476,41 @@
             </div>
           </div>
         
+          <!-- Simulador de potencia: detecta si est&aacute; sub o sobre-dimensionada
+               y permite al usuario "jugar" con el slider para ver el coste y los
+               efectos de cada potencia. -->
+          <div class="perfil-section power-sim-section" id="power-sim-section" hidden>
+            <div class="perfil-section-head">
+              <span class="analisis-section-label">Simulador de potencia</span>
+              <button class="help-toggle" data-help="help-power-sim" aria-label="Ayuda">?</button>
+            </div>
+            <div class="help-text" id="help-power-sim">
+              <p>La potencia contratada es lo que pagas <em>fijo</em> al mes por tener luz disponible. Si tu pico real supera la contratada, salta el ICP y te quedas sin luz. Si est&aacute; muy por encima del pico, est&aacute;s pagando de m&aacute;s.</p>
+            </div>
+            <div class="power-sim-reco" id="power-sim-reco"></div>
+            <div class="power-sim-slider-wrap">
+              <div class="power-sim-meta">
+                <div class="power-sim-meta-item">
+                  <span class="power-sim-meta-label">Si contratas</span>
+                  <strong class="power-sim-value" id="power-sim-value">&mdash;</strong>
+                  <span class="power-sim-unit">kW</span>
+                </div>
+                <div class="power-sim-meta-item power-sim-meta-cost">
+                  <span class="power-sim-meta-label">Coste de potencia</span>
+                  <strong class="power-sim-cost" id="power-sim-cost">&mdash;</strong>
+                  <span class="power-sim-delta" id="power-sim-delta"></span>
+                </div>
+              </div>
+              <input type="range" class="power-sim-slider" id="power-sim-slider"
+                     min="0" max="11" step="1" value="3" aria-label="Simula la potencia contratada" />
+              <div class="power-sim-marks" id="power-sim-marks">
+                <span class="power-sim-mark mark-current" id="power-sim-mark-current"></span>
+                <span class="power-sim-mark mark-pico" id="power-sim-mark-pico"></span>
+              </div>
+              <div class="power-sim-feedback" id="power-sim-feedback"></div>
+            </div>
+          </div>
+
           <details class="contract-details">
             <summary>
               <span class="details-toggle-icon" aria-hidden="true">&#9656;</span>
@@ -550,6 +604,6 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="app.js?v=20260519e"></script>
+  <script src="app.js?v=20260520a"></script>
 </body>
 </html>

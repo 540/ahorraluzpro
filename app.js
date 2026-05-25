@@ -74,7 +74,7 @@
   // Debug hook: en localhost exponemos processQR para que el script
   // scripts/verify-prepush.js pueda reproducir el flow sin pasar por la cámara.
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') {
-    window.__ahorraluzDebug = { processQR };
+    window.__ahorraluzDebug = { processQR, renderCarouselContextNote };
   }
 
   // --- Landing mockup carousel (vistosidad de portada) ---
@@ -786,6 +786,11 @@
       const companyName = await fetchCompanyName(qrData.comercializadora);
       const currentAnnualCost = estimateAnnualCost(qrData);
       const results = processOffers(offers, qrData, currentAnnualCost, companyName);
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        window.__lastResults = results;
+        window.__lastQrData = qrData;
+        window.__lastOffersRaw = offers;
+      }
       await completeStep('step-calc', 400);
 
       // Show results
@@ -899,34 +904,80 @@
       ? sorted.filter(o => o.importePrimerAnio < currentAnnualCost).length + 1
       : null;
 
+    // === Detección de ofertas sospechosas ===
+    // Una oferta es "sospechosa" si su precio es un outlier extremo respecto
+    // a la mediana del top 10, o si su nombre contiene patterns típicos de
+    // promociones condicionales ("Solar Free", "Gratis", etc.). La CNMC las
+    // lista sin avisar de los requisitos (placas solares con esa misma
+    // comercializadora, cliente nuevo, etc.) y enganchan al usuario con un
+    // precio irreal. Caso real: Plenitude "Solar Free" 237€/año vs la
+    // siguiente oferta a 1108€/año (ratio 0.21x).
+    const PRICE_OUTLIER_RATIO = 0.6; // si precio < 60% de la mediana del top → outlier
+    const SUSPECT_NAME_PATTERN = /\b(free|gratis|gratuit|0%|0\s*€|gratuita)\b/i;
+    const topMedian = (function() {
+      const top = sorted.slice(0, Math.min(10, sorted.length));
+      if (top.length < 3) return null;
+      const sortedPrices = top.map(o => o.importePrimerAnio).sort((a, b) => a - b);
+      return sortedPrices[Math.floor(sortedPrices.length / 2)];
+    })();
+
+    function detectSuspect(offer) {
+      const reasons = [];
+      if (topMedian && offer.importePrimerAnio < topMedian * PRICE_OUTLIER_RATIO) {
+        const ratio = (offer.importePrimerAnio / topMedian).toFixed(2);
+        reasons.push({ type: 'price-outlier', detail: `Precio anormalmente bajo (${ratio}× la mediana del top 10)` });
+      }
+      if (SUSPECT_NAME_PATTERN.test(offer.oferta || '')) {
+        reasons.push({ type: 'suspect-name', detail: 'Nombre típico de promoción condicional ("Free", "Gratis", etc.)' });
+      }
+      return reasons.length > 0 ? reasons : null;
+    }
+
     function mapOffer(o) {
+      const suspectReasons = detectSuspect(o);
       return {
         company: cleanCompanyName(o.comercializadora || ''),
         offerName: o.oferta || '',
-        // amount = importe del primer año (con descuento si lo hay).
-        // secondYearAmount = importe estable a partir del 2º año.
-        // Si difieren, hay descuento de bienvenida.
         amount: o.importePrimerAnio,
         secondYearAmount: o.importeSegundoAnio,
         hasDiscount: o.importePrimerAnio < o.importeSegundoAnio,
         discountAmount: Math.max(0, o.importeSegundoAnio - o.importePrimerAnio),
         hasPenalty: o.penalizacion,
         isGreen: o.verde,
+        // Metadatos para identificar promos condicionales / outliers
+        suspect: !!suspectReasons,
+        suspectReasons: suspectReasons,
+        validez: o.validez || '',
+        autoconsumo: !!o.autoconsumo,
       };
     }
+
+    // === Best "real" (no sospechosa) para el hero ===
+    // Si la oferta más barata es sospechosa, buscamos la primera no-sospechosa
+    // como referencia "creíble". El hero mostrará ambas (dual): la sospechosa
+    // marcada con warning + la legítima al lado.
+    const mappedTop = topOffers.map(mapOffer);
+    const firstLegitimate = mappedTop.find(o => !o.suspect) || mappedTop[0];
+    const bestMapped = mapOffer(best);
+    const heroMode = bestMapped.suspect && firstLegitimate && firstLegitimate !== bestMapped
+      ? 'dual' : 'single';
 
     return {
       current: {
         company: companyName,
         amount: currentAnnualCost,
       },
-      best: mapOffer(best),
-      // top 10 ofertas para el carrusel
-      topOffers: topOffers.map(mapOffer),
-      // Mantenemos alternatives por retrocompatibilidad temporal (no se usa
-      // en el carrusel, pero algún render legacy puede consultar)
+      best: bestMapped,
+      // Si la mejor es sospechosa, esta es la mejor "creíble" alternativa
+      legitimateBest: heroMode === 'dual' ? firstLegitimate : null,
+      heroMode: heroMode,
+      topOffers: mappedTop,
       alternatives: [],
       savings: currentAnnualCost - best.importePrimerAnio,
+      // Ahorro "creíble" — el que esperamos que el usuario realmente consiga
+      legitimateSavings: heroMode === 'dual' && firstLegitimate
+        ? currentAnnualCost - firstLegitimate.amount
+        : currentAnnualCost - best.importePrimerAnio,
       totalOffers: sorted.length,
       userRankPosition: userRankPosition,
       alreadyBest: alreadyBest,
@@ -1253,6 +1304,165 @@
     if (consumoTotal > 0) {
       setText('adv-actual-kwh', `${(results.current.amount / consumoTotal).toFixed(3)} €/kWh`);
     }
+    renderPowerSimulator(qrData);
+  }
+
+  // === Simulador de potencia interactivo ===
+  // Permite al usuario mover un slider entre potencias estándar 2.0TD y ver
+  // cómo cambia el coste fijo. Si el pico real (pmaxP*) supera la potencia
+  // simulada → warning. Si el pico está muy por debajo → "estás
+  // sobrecontratado". Recomendación calculada al cargar.
+  const POWER_STEPS = [3.45, 4.6, 5.75, 6.9, 8.05, 9.2, 10.35, 11.5, 12.65, 13.85, 14.49, 15.0];
+
+  function renderPowerSimulator(qrData) {
+    const section = $('power-sim-section');
+    if (!section || !qrData) return;
+
+    const actualKw = qrData.potenciaP1 || 0;
+    const pmaxKw = Math.max(qrData.pmaxP1 || 0, qrData.pmaxP2 || 0);
+    if (actualKw <= 0) { section.hidden = true; return; }
+
+    // Precio €/kW/año combinado (P1 + P2) usando datos reales del QR si los hay
+    const pricePerKwYear = (qrData.precioPotP1 || 30.67) + (qrData.precioPotP2 || 7.30);
+
+    // Recomendación inicial
+    const reco = calculatePowerReco(actualKw, pmaxKw, pricePerKwYear);
+    renderPowerReco(reco, actualKw, pricePerKwYear);
+
+    // Marcas (potencia actual, pico)
+    const recoIdx = POWER_STEPS.indexOf(reco.suggestedKw);
+    const initialIdx = recoIdx >= 0 ? recoIdx : nearestStepIndex(actualKw);
+
+    const slider = $('power-sim-slider');
+    slider.max = String(POWER_STEPS.length - 1);
+    slider.value = String(initialIdx);
+
+    const renderState = () => {
+      const idx = parseInt(slider.value, 10);
+      const kw = POWER_STEPS[idx];
+      const cost = kw * pricePerKwYear * 1.272; // base + IE + IVA
+      const actualCost = actualKw * pricePerKwYear * 1.272;
+      const delta = cost - actualCost;
+      setText('power-sim-value', kw.toFixed(2));
+      setText('power-sim-cost', `${formatCurrency(cost)}/año`);
+      const deltaEl = $('power-sim-delta');
+      if (deltaEl) {
+        if (Math.abs(delta) < 1) {
+          deltaEl.textContent = 'igual que tu potencia actual';
+          deltaEl.className = 'power-sim-delta';
+        } else if (delta > 0) {
+          deltaEl.textContent = `+${formatCurrency(delta)}/año vs ahora`;
+          deltaEl.className = 'power-sim-delta delta-up';
+        } else {
+          deltaEl.textContent = `−${formatCurrency(-delta)}/año vs ahora`;
+          deltaEl.className = 'power-sim-delta delta-down';
+        }
+      }
+      renderPowerFeedback(kw, pmaxKw, actualKw);
+      updatePowerMarks(actualKw, pmaxKw);
+    };
+    slider.oninput = renderState;
+    renderState();
+    section.hidden = false;
+  }
+
+  function nearestStepIndex(kw) {
+    let bestIdx = 0;
+    let bestDiff = Infinity;
+    POWER_STEPS.forEach((s, i) => {
+      const d = Math.abs(s - kw);
+      if (d < bestDiff) { bestDiff = d; bestIdx = i; }
+    });
+    return bestIdx;
+  }
+
+  // Recomendación: sube si pico > 1.05× actual, baja si pico < 0.7× actual.
+  function calculatePowerReco(actualKw, pmaxKw, pricePerKwYear) {
+    const SAFETY_MARGIN = 1.05;
+    if (pmaxKw > actualKw * SAFETY_MARGIN) {
+      const targetKw = POWER_STEPS.find(s => s >= pmaxKw * 1.02) || POWER_STEPS[POWER_STEPS.length - 1];
+      const extraCost = (targetKw - actualKw) * pricePerKwYear * 1.272;
+      return { type: 'up', suggestedKw: targetKw, deltaCost: extraCost, pmaxKw, actualKw };
+    }
+    if (pmaxKw > 0 && pmaxKw < actualKw * 0.6) {
+      const targetKw = POWER_STEPS.find(s => s >= pmaxKw * 1.20) || POWER_STEPS[0];
+      const saving = (actualKw - targetKw) * pricePerKwYear * 1.272;
+      if (saving > 30) {
+        return { type: 'down', suggestedKw: targetKw, deltaCost: -saving, pmaxKw, actualKw };
+      }
+    }
+    return { type: 'ok', suggestedKw: actualKw, deltaCost: 0, pmaxKw, actualKw };
+  }
+
+  function renderPowerReco(reco, actualKw, pricePerKwYear) {
+    const el = $('power-sim-reco');
+    if (!el) return;
+    if (reco.type === 'up') {
+      el.className = 'power-sim-reco reco-warn';
+      el.innerHTML = `<span class="reco-headline">⚡ Te conviene SUBIR la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
+        Tu pico de consumo fue de <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, superando tu potencia contratada (${actualKw.toFixed(2)} kW). El ICP puede saltarte la luz al pasar de ese umbral.
+        <span class="reco-impact">Coste adicional estimado: +${formatCurrency(reco.deltaCost)}/año</span>`;
+    } else if (reco.type === 'down') {
+      el.className = 'power-sim-reco reco-save';
+      el.innerHTML = `<span class="reco-headline">💰 Te conviene BAJAR la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
+        Tu pico fue de <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, muy por debajo de tu potencia contratada (${actualKw.toFixed(2)} kW). Estás pagando de más por capacidad que no usas.
+        <span class="reco-impact">Ahorro estimado: ${formatCurrency(-reco.deltaCost)}/año</span>`;
+    } else {
+      el.className = 'power-sim-reco reco-ok';
+      el.innerHTML = `<span class="reco-headline">✓ Tu potencia contratada es razonable</span>
+        Tu pico fue de ${reco.pmaxKw.toFixed(2)} kW y tienes ${actualKw.toFixed(2)} kW contratados — margen adecuado, ni te quedas corto ni pagas de más.`;
+    }
+  }
+
+  function renderPowerFeedback(simKw, pmaxKw, actualKw) {
+    const el = $('power-sim-feedback');
+    if (!el) return;
+    if (pmaxKw > 0 && simKw < pmaxKw) {
+      el.className = 'power-sim-feedback fb-warn';
+      el.innerHTML = `⚠ Con <strong>${simKw.toFixed(2)} kW</strong> tu ICP saltaría cuando llegues al pico (${pmaxKw.toFixed(2)} kW). Debes contratar al menos ${POWER_STEPS.find(s => s >= pmaxKw)?.toFixed(2) || 'más'} kW.`;
+      return;
+    }
+    if (pmaxKw > 0 && simKw > pmaxKw * 1.8) {
+      el.className = 'power-sim-feedback fb-tip';
+      el.innerHTML = `Con <strong>${simKw.toFixed(2)} kW</strong> tienes mucho margen sobre tu pico real (${pmaxKw.toFixed(2)} kW). Salvo que tengas previsto un consumo mucho mayor, podrías bajarla.`;
+      return;
+    }
+    if (Math.abs(simKw - actualKw) < 0.05) {
+      el.className = 'power-sim-feedback';
+      el.innerHTML = `Es tu <strong>potencia actual</strong>.`;
+      return;
+    }
+    el.className = 'power-sim-feedback fb-good';
+    el.innerHTML = `✓ <strong>${simKw.toFixed(2)} kW</strong> cubre tu pico (${pmaxKw > 0 ? pmaxKw.toFixed(2) + ' kW' : 'sin dato'}) con margen.`;
+  }
+
+  function updatePowerMarks(actualKw, pmaxKw) {
+    const slider = $('power-sim-slider');
+    const cur = $('power-sim-mark-current');
+    const pic = $('power-sim-mark-pico');
+    if (!slider || !cur || !pic) return;
+    const max = POWER_STEPS.length - 1;
+    const placeAt = (kw, el, label) => {
+      if (!kw || kw <= 0) { el.classList.add('hidden'); return; }
+      // Mapear kw al rango 0..max usando POWER_STEPS
+      let pos = 0;
+      for (let i = 0; i < POWER_STEPS.length; i++) {
+        if (POWER_STEPS[i] >= kw) {
+          if (i === 0) { pos = 0; break; }
+          const prev = POWER_STEPS[i - 1];
+          const frac = (kw - prev) / (POWER_STEPS[i] - prev);
+          pos = i - 1 + frac;
+          break;
+        }
+        if (i === POWER_STEPS.length - 1) pos = i;
+      }
+      const pct = (pos / max) * 100;
+      el.style.left = `${pct}%`;
+      el.textContent = label;
+      el.classList.remove('hidden');
+    };
+    placeAt(actualKw, cur, `tu actual ${actualKw.toFixed(2)} kW`);
+    placeAt(pmaxKw, pic, `pico ${pmaxKw.toFixed(2)} kW`);
   }
 
   // === Carrusel de Mejores Ofertas: top 10 con comparación dinámica ===
@@ -1302,9 +1512,10 @@
   // Slide = solo la COLUMNA derecha (propuesta de la oferta). Misma estructura
   // de filas que el actual, mismas alturas, para que la comparación sea visual
   // fila a fila aunque el actual sea estático.
-  function buildSlideHTML(offer, rank, cur) {
+  function buildSlideHTML(offer, rank, cur, qrData) {
     // Tags (features de la oferta). Sin chip de ahorro aquí — va aparte como banner.
     const features = [];
+    if (offer.suspect) features.push('<span class="slide-tag tag-warn">⚠ Promoción condicional</span>');
     if (offer.isGreen) features.push('<span class="slide-tag tag-green">🌿 100% verde</span>');
     if (!offer.hasPenalty) features.push('<span class="slide-tag">🔒 Sin permanencia</span>');
     else features.push('<span class="slide-tag tag-warn">12 meses permanencia</span>');
@@ -1353,8 +1564,15 @@
       ? `<span class="slide-rank-badge star">★ #1</span>`
       : `<span class="slide-rank-badge">#${rank}</span>`;
 
+    // Banner especial encima del slide si la oferta es sospechosa (Solar Free,
+    // outlier brutal). Sustituye el savings-banner verde por uno amarillo.
+    const suspectBanner = offer.suspect ? buildSuspectBanner(offer) : '';
+
+    // Acordeón con desglose detallado (tabla "¿por qué te ahorras X?")
+    const breakdown = buildBreakdownTable(offer, cur, qrData);
+
     return `
-      <article class="offers-proposed-slide" data-rank="${rank}">
+      <article class="offers-proposed-slide${offer.suspect ? ' suspect' : ''}" data-rank="${rank}">
         <div class="offers-col-tag offers-col-tag-new">Propuesta ${rankBadge}</div>
         <div class="offers-col-company">${offer.company}</div>
         <div class="offers-col-subtitle">${offer.offerName || ''}</div>
@@ -1375,19 +1593,187 @@
             <span class="offers-col-value">${pagoNuevoHTML}</span>
           </li>
         </ul>
-        ${savingsBanner}
-        <a href="${url}" target="_blank" rel="noopener noreferrer" class="slide-cta">
-          Cambiar a ${offer.company} →
+        ${suspectBanner || savingsBanner}
+        ${breakdown}
+        <a href="${url}" target="_blank" rel="noopener noreferrer" class="slide-cta${offer.suspect ? ' slide-cta-suspect' : ''}">
+          ${offer.suspect ? 'Ver condiciones en' : 'Cambiar a'} ${offer.company} →
         </a>
       </article>
     `;
+  }
+
+  // Banner que sustituye el savings-banner verde cuando la oferta es
+  // sospechosa: tono amarillo + razón explícita en vez de "te ahorras X".
+  function buildSuspectBanner(offer) {
+    const reasons = offer.suspectReasons || [];
+    const isSolar = /\bsolar\b/i.test(offer.offerName || '');
+    const headline = isSolar
+      ? 'Requiere placas solares con esta comercializadora'
+      : (reasons.some(r => r.type === 'suspect-name')
+          ? 'Promoción con condiciones especiales'
+          : 'Precio sospechosamente bajo');
+    const detail = isSolar
+      ? `Es una promoción tipo "Solar Free": el descuento sólo se activa si instalas placas contratándolas con ${offer.company}.`
+      : (offer.validez
+          ? `Letra pequeña CNMC: ${offer.validez}`
+          : 'Verifica los requisitos en la web de la comercializadora antes de contratar.');
+    return `<div class="slide-savings-banner suspect">
+      <span class="slide-savings-icon">⚠</span>
+      <div class="slide-savings-text">
+        <span class="slide-savings-amount">${headline}</span>
+        <span class="slide-savings-detail">${detail}</span>
+      </div>
+    </div>`;
+  }
+
+  // Tabla expandible con desglose actual vs estimación nueva oferta.
+  // Datos reales del usuario (del QR) en la columna izquierda; estimación
+  // proporcional al total en la derecha. Sin desglose oficial por oferta de
+  // la CNMC, los componentes nuevos son ESTIMADOS asumiendo que los precios
+  // de potencia y los impuestos son ~estables y la mayor variación está en
+  // el coste de la energía.
+  function buildBreakdownTable(offer, cur, qrData) {
+    if (!qrData || cur.pago <= 0) return '';
+    const rows = computeBreakdownRows(offer, cur, qrData);
+    if (!rows) return '';
+    const totalSaving = cur.pago - offer.amount;
+    const energySaving = rows.find(r => r.key === 'energia')?.delta || 0;
+    const powerSaving = rows.find(r => r.key === 'potencia')?.delta || 0;
+    const taxSaving = rows.find(r => r.key === 'impuestos')?.delta || 0;
+    const dominant =
+      Math.abs(energySaving) >= Math.abs(powerSaving) && Math.abs(energySaving) >= Math.abs(taxSaving) ? 'energia' :
+      Math.abs(powerSaving) >= Math.abs(taxSaving) ? 'potencia' : 'impuestos';
+    const headline = totalSaving > 0
+      ? (dominant === 'energia'
+          ? `Te ahorras ${formatCurrency(totalSaving)}/año principalmente en el <strong>precio de la energía</strong>.`
+          : dominant === 'potencia'
+            ? `Te ahorras ${formatCurrency(totalSaving)}/año sobre todo en <strong>potencia contratada</strong>.`
+            : `Te ahorras ${formatCurrency(totalSaving)}/año por menor coste de <strong>peajes e impuestos</strong>.`)
+      : `Esta oferta cuesta ${formatCurrency(-totalSaving)}/año más que tu tarifa actual.`;
+
+    const rowHTML = rows.map(r => `
+      <tr class="${r.delta > 0 ? 'row-saves' : r.delta < 0 ? 'row-costs' : ''}">
+        <th scope="row">${r.label}</th>
+        <td>${formatCurrency(r.current)}</td>
+        <td>${r.newEstimated != null ? '~' + formatCurrency(r.newEstimated) : '—'}</td>
+        <td class="td-delta">${r.delta !== 0 ? (r.delta > 0 ? '−' : '+') + formatCurrency(Math.abs(r.delta)) : '—'}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <details class="slide-breakdown">
+        <summary class="slide-breakdown-summary">
+          <span class="slide-breakdown-icon" aria-hidden="true">📊</span>
+          <span>¿Por qué te ahorras esto?</span>
+          <span class="slide-breakdown-chevron" aria-hidden="true">▾</span>
+        </summary>
+        <div class="slide-breakdown-content">
+          <p class="slide-breakdown-headline">${headline}</p>
+          <table class="slide-breakdown-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Tu factura</th>
+                <th>Con ${offer.company}</th>
+                <th>Δ</th>
+              </tr>
+            </thead>
+            <tbody>${rowHTML}</tbody>
+            <tfoot>
+              <tr>
+                <th>Total anual</th>
+                <td>${formatCurrency(cur.pago)}</td>
+                <td><strong>${formatCurrency(offer.amount)}</strong></td>
+                <td class="td-delta">${totalSaving > 0 ? '−' + formatCurrency(totalSaving) : '+' + formatCurrency(-totalSaving)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p class="slide-breakdown-disclaimer">
+            La columna "Con ${offer.company}" es una <strong>estimación</strong>: la CNMC no publica el desglose por componente de cada oferta. Asumimos peajes e impuestos similares (dependen de tu consumo, no de la comercializadora).
+          </p>
+        </div>
+      </details>
+    `;
+  }
+
+  // Calcula filas del desglose: potencia, energía e impuestos+peajes.
+  // - Columna izquierda: precios REALES del QR del usuario.
+  // - Columna derecha: ESTIMACIÓN. Asumimos que la potencia es similar
+  //   (varía poco entre comercializadoras), y los peajes/impuestos también.
+  //   La diferencia restante se imputa al coste de la energía.
+  function computeBreakdownRows(offer, cur, qrData) {
+    const consumoTotal = (qrData.consumoAnualP1 || 0) + (qrData.consumoAnualP2 || 0) + (qrData.consumoAnualP3 || 0);
+    if (consumoTotal <= 0) return null;
+    const pP1 = qrData.potenciaP1 || 0;
+    const pP2 = qrData.potenciaP2 || pP1;
+    const prP1 = qrData.precioPotP1 || 0;
+    const prP2 = qrData.precioPotP2 || 0;
+    const prE1 = qrData.precioEnerP1 || 0;
+    const prE2 = qrData.precioEnerP2 || 0;
+    const prE3 = qrData.precioEnerP3 || 0;
+
+    // Coste base (sin impuestos)
+    const costePotActual = pP1 * prP1 + pP2 * prP2;
+    const costeEneActual = (qrData.consumoAnualP1 || 0) * prE1
+                         + (qrData.consumoAnualP2 || 0) * prE2
+                         + (qrData.consumoAnualP3 || 0) * prE3;
+    if (costePotActual + costeEneActual <= 0) return null;
+
+    // Reconstruir impuestos a partir del total: total = (base) * 1.0511 * 1.21
+    // → base = total / 1.272 (aprox). Impuestos = total - base.
+    const TAX_FACTOR = 1.0511 * 1.21; // ≈ 1.272
+    const baseActual = cur.pago / TAX_FACTOR;
+    const impuestosActual = cur.pago - baseActual;
+
+    // Para la oferta nueva, estimamos:
+    // - Potencia: misma que la actual (asumiendo cambio sin tocar potencia)
+    // - Impuestos: proporcionales al total (cur.amount)
+    const baseNueva = offer.amount / TAX_FACTOR;
+    const impuestosNueva = offer.amount - baseNueva;
+    let costePotNueva = costePotActual; // asunción: misma potencia
+    let costeEneNueva = baseNueva - costePotNueva;
+
+    // Outlier extremo (caso "Solar Free" a 237€ con consumo de 9809 kWh):
+    // base estimada queda por debajo del coste de potencia → energía sale
+    // negativa. Significa que la oferta cobra ~0€/kWh de energía. En ese
+    // caso ajustamos la potencia a la baja también (probablemente la
+    // promoción ofrece todo a precio reducido, no sólo energía).
+    if (costeEneNueva < 0) {
+      const ratio = baseNueva / Math.max(costePotActual + costeEneActual, 1);
+      costePotNueva = costePotActual * Math.max(0, ratio);
+      costeEneNueva = baseNueva - costePotNueva;
+    }
+
+    return [
+      {
+        key: 'potencia',
+        label: `Potencia (${pP1} kW)`,
+        current: costePotActual,
+        newEstimated: costePotNueva,
+        delta: costePotActual - costePotNueva,
+      },
+      {
+        key: 'energia',
+        label: `Energía (${Math.round(consumoTotal)} kWh)`,
+        current: costeEneActual,
+        newEstimated: Math.max(0, costeEneNueva),
+        delta: costeEneActual - Math.max(0, costeEneNueva),
+      },
+      {
+        key: 'impuestos',
+        label: 'Peajes + IE + IVA',
+        current: impuestosActual,
+        newEstimated: impuestosNueva,
+        delta: impuestosActual - impuestosNueva,
+      },
+    ];
   }
 
   function renderCarouselFrame() {
     const track = $('offers-track');
     if (!track) return;
     track.innerHTML = carouselState.offers
-      .map((offer, i) => buildSlideHTML(offer, i + 1, carouselState.cur))
+      .map((offer, i) => buildSlideHTML(offer, i + 1, carouselState.cur, carouselState.qrData))
       .join('');
     // Dots
     const dotsEl = $('offers-dots');
@@ -1459,15 +1845,16 @@
   function renderCarouselContextNote(scenario, results) {
     const el = $('offers-context-note');
     if (!el) return;
+    // En hero dual usamos savings legítimos (no el outlier sospechoso).
     const best = results && results.best;
-    const savings = (results && results.savings) || 0;
+    const savings = (results && (results.legitimateSavings != null ? results.legitimateSavings : results.savings)) || 0;
     const cur = scenario && scenario.modifiers ? scenario.modifiers : {};
     let tone = 'info', icon = 'ℹ', text = '';
 
     switch (scenario.primaryCase) {
       case 'rank-1':
         tone = 'good'; icon = '🏆';
-        text = `<strong>Ya tienes la mejor oferta del mercado.</strong> Estas son las top alternativas si quisieras cambiar.`;
+        text = `<strong>Ya tienes la mejor oferta del mercado.</strong> Estas son las alternativas top si quisieras cambiar.`;
         break;
       case 'rank-top3':
         tone = 'good'; icon = '✓';
@@ -1510,6 +1897,7 @@
     // Init state
     carouselState.allOffers = results.topOffers;
     carouselState.cur = buildCurrentContractView(qrData, results);
+    carouselState.qrData = qrData;
     carouselState.filter = 'all';
     carouselState.currentIndex = 0;
     carouselState.offers = results.topOffers.slice();
@@ -1791,13 +2179,23 @@
     setDisplay('section-howto', showHowto ? '' : 'none');
   }
 
+  // En hero dual usamos la oferta legítima (no la sospechosa). El "ahorro"
+  // que se anuncia es el realista — la promo condicional va en card aparte.
+  function heroDisplay(results) {
+    if (results.heroMode === 'dual' && results.legitimateBest) {
+      return { offer: results.legitimateBest, savings: results.legitimateSavings };
+    }
+    return { offer: results.best, savings: results.savings };
+  }
+
   function renderCaseBigSavings(results, qrData, scenario) {
-    const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
+    const d = heroDisplay(results);
+    const pct = Math.round(d.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
       'Ahorro disponible',
-      `${formatCurrency(results.savings)}/año`,
-      `cambiando a <strong>${results.best.company}</strong>`,
-      `Estás pagando un <strong>${pct}% de más</strong> que la mejor oferta`
+      `${formatCurrency(d.savings)}/año`,
+      `cambiando a <strong>${d.offer.company}</strong>`,
+      `Estás pagando un <strong>${pct}% de más</strong> que esta oferta`
     );
     applyResultChrome({
       heroClassRemove: ['no-savings'],
@@ -1811,12 +2209,13 @@
   }
 
   function renderCaseNormalSavings(results, qrData, scenario) {
-    const pct = Math.round(results.savings / Math.max(results.current.amount, 1) * 100);
+    const d = heroDisplay(results);
+    const pct = Math.round(d.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
       'Ahorro disponible',
-      `${formatCurrency(results.savings)}/año`,
-      `cambiando a <strong>${results.best.company}</strong>`,
-      `${formatCurrency(results.savings / 12)}/mes · estás pagando un ${pct}% de más`
+      `${formatCurrency(d.savings)}/año`,
+      `cambiando a <strong>${d.offer.company}</strong>`,
+      `${formatCurrency(d.savings / 12)}/mes · estás pagando un ${pct}% de más`
     );
     applyResultChrome({
       heroClassRemove: ['no-savings', 'savings-big'],
@@ -1826,6 +2225,36 @@
       insightHTML: buildInsight(results, qrData),
       showHowto: true,
     });
+  }
+
+  // Renderiza la card de oferta sospechosa que va justo bajo el hero cuando
+  // la #1 del CNMC tiene condiciones especiales (promo de placas solares,
+  // "Free", outlier de precio). Si no aplica, oculta la card.
+  function renderSuspectCard(suspect, results) {
+    const card = $('suspect-offer-card');
+    if (!card) return;
+    if (!suspect) { card.hidden = true; return; }
+    setText('suspect-card-company', suspect.company);
+    setText('suspect-card-tariff', suspect.offerName);
+    const totalSaving = results.current.amount - suspect.amount;
+    setText('suspect-card-saving', `Ahorro teórico: ${formatCurrency(totalSaving)}/año`);
+    setText('suspect-card-aftermath', `vs ${formatCurrency(suspect.amount)}/año esta oferta`);
+    const reasons = suspect.suspectReasons || [];
+    const explainParts = [];
+    const lowerName = (suspect.offerName || '').toLowerCase();
+    if (lowerName.includes('solar')) {
+      explainParts.push('Es una <strong>promoción condicional</strong>: requiere instalar placas solares contratándolas con esta comercializadora. Probablemente no aplica si ya tienes placas con otra empresa.');
+    } else if (reasons.some(r => r.type === 'suspect-name')) {
+      explainParts.push('El nombre sugiere una <strong>promoción condicional</strong> (cliente nuevo, requisitos especiales, etc.). Verifica los requisitos en la web de la comercializadora.');
+    }
+    if (reasons.some(r => r.type === 'price-outlier')) {
+      explainParts.push('El precio es <strong>anormalmente bajo</strong> comparado con el resto del mercado. Suele indicar que el ahorro real depende de condiciones que la CNMC no muestra.');
+    }
+    if (suspect.validez) {
+      explainParts.push(`<em>Letra pequeña CNMC:</em> ${suspect.validez}`);
+    }
+    setHTML('suspect-card-reason', explainParts.join(' '));
+    card.hidden = false;
   }
 
   function renderCaseSmallSavings(results, qrData, scenario) {
@@ -1881,28 +2310,38 @@
       return;
     }
 
+    // === Hero dual: si la mejor oferta es sospechosa, usamos la "legítima"
+    //     como referencia principal y mostramos la sospechosa en una card
+    //     aparte con la advertencia. El usuario ve dos números a la vez. ===
+    const displayBest = results.heroMode === 'dual' && results.legitimateBest
+      ? results.legitimateBest
+      : results.best;
+    const suspectBest = results.heroMode === 'dual' ? results.best : null;
+
     // Comparison: best offer side — empresa destacada arriba, tarifa pequeña debajo
-    document.getElementById('result-best-company').textContent = results.best.company;
+    document.getElementById('result-best-company').textContent = displayBest.company;
     const bestTariffEl = document.getElementById('result-best-tariff');
-    if (bestTariffEl) bestTariffEl.textContent = results.best.offerName || '';
-    document.getElementById('result-best-amount').textContent = formatCurrency(results.best.amount);
-    if (results.best.hasDiscount) {
-      // Hay descuento de bienvenida: amount es del 1er año, mostrar "luego" debajo
+    if (bestTariffEl) bestTariffEl.textContent = displayBest.offerName || '';
+    document.getElementById('result-best-amount').textContent = formatCurrency(displayBest.amount);
+    if (displayBest.hasDiscount) {
       document.getElementById('result-best-monthly').innerHTML =
-        `${formatCurrency(results.best.amount / 12)}/mes <span class="comparison-badge-discount" title="Descuento de bienvenida el primer año">1er año</span>` +
-        `<br><span class="comparison-aftermath">luego ${formatCurrency(results.best.secondYearAmount)}/año</span>`;
+        `${formatCurrency(displayBest.amount / 12)}/mes <span class="comparison-badge-discount" title="Descuento de bienvenida el primer año">1er año</span>` +
+        `<br><span class="comparison-aftermath">luego ${formatCurrency(displayBest.secondYearAmount)}/año</span>`;
     } else {
-      document.getElementById('result-best-monthly').textContent = `${formatCurrency(results.best.amount / 12)}/mes`;
+      document.getElementById('result-best-monthly').textContent = `${formatCurrency(displayBest.amount / 12)}/mes`;
     }
 
-    // CTA en "Cómo cambiar de comercializadora" → web oficial de la mejor
-    const bestUrl = getCompanyUrl(results.best.company, results.best.offerName);
+    // CTA en "Cómo cambiar de comercializadora" → web oficial de la legítima
+    const bestUrl = getCompanyUrl(displayBest.company, displayBest.offerName);
     const howtoLinkEl = $('howto-cta-link');
     if (howtoLinkEl) {
       howtoLinkEl.href = bestUrl;
       const txt = howtoLinkEl.querySelector('.howto-cta-text');
-      if (txt) txt.textContent = `Cambiar a ${results.best.company}`;
+      if (txt) txt.textContent = `Cambiar a ${displayBest.company}`;
     }
+
+    // Card de oferta sospechosa (solo si aplica)
+    renderSuspectCard(suspectBest, results);
 
     // === Renderizar por caso primario ===
     switch (scenario.primaryCase) {
