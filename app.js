@@ -2510,14 +2510,35 @@
 
   // En desktop (>=1024px) abrimos los <details> de las 3 secciones para que
   // se vea todo a la vez. En mobile quedan cerrados — el usuario los expande.
+  //
+  // Una vez que el usuario haya interactuado manualmente con un <details>
+  // (lo abre o cierra), NO volvemos a sobrescribir su estado en resize.
+  // Esto evita un bug en mobile donde el resize disparado por la barra de
+  // URL del navegador (al hacer scroll) cerraba los desplegables que el
+  // usuario había abierto.
   function applyCollapsibleDefaults() {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     document.querySelectorAll('.collapsible-section').forEach(d => {
+      if (d.dataset.userToggled === 'true') return;
       d.open = isDesktop;
     });
   }
-  // Reajustar al redimensionar (desktop->mobile o viceversa)
+  // Marcar como "tocado por el usuario" cualquier <details> .collapsible-section
+  // tras un toggle real. Delegado en el contenedor para captar futuros details
+  // que se inserten dinámicamente.
+  document.addEventListener('toggle', e => {
+    const d = e.target;
+    if (d && d.classList && d.classList.contains('collapsible-section')) {
+      d.dataset.userToggled = 'true';
+    }
+  }, true);
+  // En resize sólo reajustamos si cruzamos el breakpoint desktop/mobile,
+  // y solo para los <details> que el usuario aún no ha tocado.
+  let wasDesktop = window.matchMedia('(min-width: 1024px)').matches;
   window.addEventListener('resize', () => {
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop === wasDesktop) return;
+    wasDesktop = isDesktop;
     if (document.getElementById('screen-result').classList.contains('active')) {
       applyCollapsibleDefaults();
     }
