@@ -24,7 +24,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260520a">
+  <link rel="stylesheet" href="styles.css?v=20260526b">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 </head>
 <body>
@@ -336,9 +336,9 @@
                texto se reescribe para reflejar esa oferta concreta. -->
           <div class="analisis-diagnostic">
             <div class="analisis-context-pill" id="analisis-context-pill" hidden>
-              <span class="ctx-pill-label">Analizando:</span>
+              <span class="ctx-pill-label">Comparando con:</span>
               <span class="ctx-pill-value" id="analisis-context-offer">&mdash;</span>
-              <span class="ctx-pill-hint">cambia el carrusel para ver otras</span>
+              <span class="ctx-pill-hint">(cambia arriba)</span>
             </div>
             <span class="analisis-section-label">Diagn&oacute;stico</span>
             <p id="insight-text">&mdash;</p>
@@ -379,6 +379,7 @@
                 <div class="power-sim-meta-item power-sim-meta-cost">
                   <span class="power-sim-meta-label">Coste de potencia</span>
                   <strong class="power-sim-cost" id="power-sim-cost">&mdash;</strong>
+                  <span class="power-sim-cost-sub" id="power-sim-cost-sub"></span>
                   <span class="power-sim-delta" id="power-sim-delta"></span>
                 </div>
               </div>
@@ -626,6 +627,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script src="app.js?v=20260526a"></script>
+  <script src="app.js?v=20260526b"></script>
 </body>
 </html>

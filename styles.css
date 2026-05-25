@@ -5,36 +5,34 @@
    DESIGN TOKENS
    =================================================================== */
 :root {
-  /* Light theme = default. El tema oscuro se aplica con [data-theme="dark"]
-     o automáticamente si el sistema lo prefiere y no hay override manual.
-     CONTRASTE alto: bordes más oscuros y sombras más visibles para que las
-     tarjetas se distingan claramente del fondo. */
-  --bg: #ecedf0;
-  --bg-subtle: #dfe0e5;
+  /* Light theme = default. CONTRASTE alto: bordes oscuros y sombras
+     profundas para que cada card se distinga del fondo con claridad. */
+  --bg: #e2e4e8;
+  --bg-subtle: #d4d6db;
   --bg-card: #ffffff;
-  --bg-card-alt: #f4f5f8;
-  --bg-card-hover: #ebecf0;
-  --text: #0f0f12;
-  --text-secondary: #3f3f46;
-  --text-muted: #56565d;
-  --accent: #008066;
-  --accent-hover: #009478;
-  --accent-subtle: rgba(0, 128, 102, 0.12);
-  --accent-glow: rgba(0, 128, 102, 0.22);
+  --bg-card-alt: #f0f1f4;
+  --bg-card-hover: #e5e7ec;
+  --text: #0a0a0d;
+  --text-secondary: #2f2f36;
+  --text-muted: #4b4b52;
+  --accent: #006a55;
+  --accent-hover: #008066;
+  --accent-subtle: rgba(0, 106, 85, 0.14);
+  --accent-glow: rgba(0, 106, 85, 0.28);
   --savings: #047857;
-  --savings-glow: rgba(4, 120, 87, 0.16);
-  --danger: #b91c1c;
-  --border: rgba(0, 0, 0, 0.22);
-  --border-subtle: rgba(0, 0, 0, 0.13);
-  --border-accent: rgba(0, 128, 102, 0.5);
-  --on-bg-translucent: rgba(0, 0, 0, 0.35);
+  --savings-glow: rgba(4, 120, 87, 0.18);
+  --danger: #991b1b;
+  --border: rgba(0, 0, 0, 0.34);
+  --border-subtle: rgba(0, 0, 0, 0.20);
+  --border-accent: rgba(0, 106, 85, 0.6);
+  --on-bg-translucent: rgba(0, 0, 0, 0.42);
   --radius: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.22), 0 6px 16px rgba(0, 0, 0, 0.14);
-  --shadow-glow: 0 0 32px rgba(0, 128, 102, 0.2);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.28), 0 8px 20px rgba(0, 0, 0, 0.18);
+  --shadow-glow: 0 0 32px rgba(0, 106, 85, 0.24);
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -46,57 +44,57 @@
    - automáticamente si el sistema prefiere dark Y no hay override manual
    =================================================================== */
 :root[data-theme="dark"] {
-  --bg: #09090b;
-  --bg-subtle: #0f0f14;
-  --bg-card: #141419;
-  --bg-card-alt: #18181f;
-  --bg-card-hover: #1c1c24;
-  --text: #f0f0f2;
-  --text-secondary: #a1a1aa;
-  --text-muted: #6b6b7b;
+  --bg: #06060a;
+  --bg-subtle: #0d0d12;
+  --bg-card: #181820;
+  --bg-card-alt: #1f1f28;
+  --bg-card-hover: #25252e;
+  --text: #f5f5f8;
+  --text-secondary: #b8b8c1;
+  --text-muted: #82828e;
   --accent: #00d4aa;
   --accent-hover: #00f0c0;
-  --accent-subtle: rgba(0, 212, 170, 0.08);
-  --accent-glow: rgba(0, 212, 170, 0.15);
+  --accent-subtle: rgba(0, 212, 170, 0.10);
+  --accent-glow: rgba(0, 212, 170, 0.20);
   --savings: #34d399;
-  --savings-glow: rgba(52, 211, 153, 0.12);
+  --savings-glow: rgba(52, 211, 153, 0.16);
   --danger: #f87171;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-accent: rgba(0, 212, 170, 0.2);
-  --on-bg-translucent: rgba(255, 255, 255, 0.2);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.15);
+  --border: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-accent: rgba(0, 212, 170, 0.35);
+  --on-bg-translucent: rgba(255, 255, 255, 0.28);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.22);
 }
 
 /* Auto-detect del sistema cuando no hay override manual */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #09090b;
-    --bg-subtle: #0f0f14;
-    --bg-card: #141419;
-    --bg-card-alt: #18181f;
-    --bg-card-hover: #1c1c24;
-    --text: #f0f0f2;
-    --text-secondary: #a1a1aa;
-    --text-muted: #6b6b7b;
+    --bg: #06060a;
+    --bg-subtle: #0d0d12;
+    --bg-card: #181820;
+    --bg-card-alt: #1f1f28;
+    --bg-card-hover: #25252e;
+    --text: #f5f5f8;
+    --text-secondary: #b8b8c1;
+    --text-muted: #82828e;
     --accent: #00d4aa;
     --accent-hover: #00f0c0;
-    --accent-subtle: rgba(0, 212, 170, 0.08);
-    --accent-glow: rgba(0, 212, 170, 0.15);
+    --accent-subtle: rgba(0, 212, 170, 0.10);
+    --accent-glow: rgba(0, 212, 170, 0.20);
     --savings: #34d399;
-    --savings-glow: rgba(52, 211, 153, 0.12);
+    --savings-glow: rgba(52, 211, 153, 0.16);
     --danger: #f87171;
-    --border: rgba(255, 255, 255, 0.06);
-    --border-subtle: rgba(255, 255, 255, 0.04);
-    --border-accent: rgba(0, 212, 170, 0.2);
-    --on-bg-translucent: rgba(255, 255, 255, 0.2);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.15);
+    --border: rgba(255, 255, 255, 0.16);
+    --border-subtle: rgba(255, 255, 255, 0.10);
+    --border-accent: rgba(0, 212, 170, 0.35);
+    --on-bg-translucent: rgba(255, 255, 255, 0.28);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.22);
   }
 }
 
@@ -2490,8 +2488,16 @@ html, body {
 }
 .slide-savings-banner.good {
   background: var(--savings-glow);
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--savings);
 }
+/* Dark mode: subir contraste del banner verde — el verde sobre verde claro
+   pierde fuerza, mejor verde brillante sobre fondo más saturado. */
+[data-theme="dark"] .slide-savings-banner.good {
+  background: rgba(52, 211, 153, 0.20);
+  border-color: var(--savings);
+}
+[data-theme="dark"] .slide-savings-banner.good .slide-savings-amount { color: #6ee7b7; }
+[data-theme="dark"] .slide-savings-banner.good .slide-savings-detail { color: #d1fae5; }
 .slide-savings-banner.warn {
   background: rgba(251, 191, 36, 0.08);
   border: 1px solid rgba(251, 191, 36, 0.25);
@@ -2808,6 +2814,48 @@ html, body {
 .power-sim-feedback.fb-tip {
   background: rgba(96, 165, 250, 0.08);
   border-color: rgba(96, 165, 250, 0.3);
+}
+
+/* Detalle "Si NO subes la potencia" — conecta el "+X €/mes" con el riesgo
+   real del ICP. Bloque rojo discreto dentro de la recomendación. */
+.power-sim-reco .reco-warn-detail {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(220, 38, 38, 0.10);
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.power-sim-reco .reco-warn-detail strong { color: var(--danger); }
+
+/* Subtítulo del coste de potencia: €/año debajo del €/mes principal. */
+.power-sim-cost-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Filas "iguales" en el comparador del carrusel: el valor está repetido
+   respecto al contrato actual, así que lo atenuamos y añadimos un tag
+   "igual" para que las diferencias destaquen. */
+.offers-col-row.row-same { opacity: 0.65; }
+.offers-col-row.row-same .offers-col-value { font-weight: 500; }
+.row-same-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  padding: 1px 5px;
+  border-radius: 999px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 /* === Compartir enlace de resultado === */

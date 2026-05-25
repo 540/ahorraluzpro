@@ -1271,7 +1271,15 @@
     };
     if (qrData.inicioAnual) {
       const inicio = formatDate(qrData.inicioAnual);
-      const fin = qrData.finAnual ? formatDate(qrData.finAnual) : 'actualidad';
+      // Si finA viene vacío, lo inferimos como iniA + 1 año (el periodo
+      // anual del QR cubre 12 meses por definición). Antes mostraba
+      // "actualidad" que era incorrecto cuando la factura era reciente.
+      let finRaw = qrData.finAnual;
+      if (!finRaw) {
+        const d = new Date(qrData.inicioAnual);
+        if (!isNaN(d)) { d.setFullYear(d.getFullYear() + 1); finRaw = d.toISOString().slice(0, 10); }
+      }
+      const fin = finRaw ? formatDate(finRaw) : 'actualidad';
       document.getElementById('user-periodo').textContent = `${inicio} — ${fin}`;
     } else {
       document.getElementById('user-periodo').textContent = '\u00DAltimo a\u00f1o';
@@ -1338,12 +1346,21 @@
       const costeKwh = imp / consumoFact;
       const media = 0.20;
       const dif = (costeKwh / media - 1) * 100;
+      // Si el usuario tiene excedentes de autoconsumo, su €/kWh efectivo se
+      // ve distorsionado a la baja (el dinero compensado reduce el "imp"
+      // total). Contextualizamos para evitar la contradicción "tarifa muy
+      // competitiva" vs "puedes ahorrar X €/año" en la oferta principal.
+      const hasAutoconsumo = (qrData.excedentes || 0) > 0;
       costValEl.textContent = `${costeKwh.toFixed(3)} €/kWh`;
       if (dif > 10) {
         costDetEl.innerHTML = `<strong>${Math.round(dif)}% por encima</strong> de la media nacional. Hay margen claro de ahorro.`;
         document.getElementById('reco-coste-card').classList.add('reco-card-alert');
       } else if (dif < -10) {
-        costDetEl.innerHTML = `<strong>${Math.abs(Math.round(dif))}% por debajo</strong> de la media. Tarifa muy competitiva.`;
+        if (hasAutoconsumo) {
+          costDetEl.innerHTML = `<strong>${Math.abs(Math.round(dif))}% por debajo</strong> de la media, gracias a tu <strong>autoconsumo solar</strong>. El ranking de ofertas compara tarifa pura sin contar excedentes.`;
+        } else {
+          costDetEl.innerHTML = `<strong>${Math.abs(Math.round(dif))}% por debajo</strong> de la media. Tu tarifa es competitiva en €/kWh.`;
+        }
         document.getElementById('reco-coste-card').classList.add('reco-card-good');
       } else {
         costDetEl.innerHTML = `Cerca de la media nacional (${media.toFixed(2)} €/kWh).`;
@@ -1354,13 +1371,15 @@
   }
 
   // === Estado del usuario actual (para reusar en cada slide del carrusel) ===
+  // tipoContrato del QR (`tc`): 0=fijo normal, 1=fijo no estándar, 2=indexado.
+  // El BOE no permite distinguir PVPC del libre con este campo, así que NO
+  // mostramos "PVPC / Fijo" mezclados — confundía al usuario. Cuando es fijo,
+  // mostramos "Precio fijo" sin más matices.
   function buildCurrentContractView(qrData, results) {
-    const tipoKey = qrData.tipoContrato === 2 ? 'indexado'
-      : qrData.tipoContrato === 1 ? 'precio-fijo'
-      : 'pvpc';
-    const tipoLabel = qrData.tipoContrato === 2 ? 'Indexado'
+    const tipoKey = qrData.tipoContrato === 2 ? 'indexado' : 'precio-fijo';
+    const tipoLabel = qrData.tipoContrato === 2 ? 'Indexado al mercado'
       : qrData.tipoContrato === 1 ? 'Fijo no estándar'
-      : 'PVPC / Fijo';
+      : 'Precio fijo';
     const potencia = qrData.potenciaP1 ? `${qrData.potenciaP1.toFixed(2)} kW` : '—';
     let permanencia = 'Sin permanencia';
     if (qrData.finPenalizacion) {
@@ -1435,21 +1454,25 @@
     const renderState = () => {
       const idx = parseInt(slider.value, 10);
       const kw = POWER_STEPS[idx];
-      const cost = kw * pricePerKwYear * 1.272; // base + IE + IVA
+      const cost = kw * pricePerKwYear * 1.272; // base + IE + IVA, anual
       const actualCost = actualKw * pricePerKwYear * 1.272;
       const delta = cost - actualCost;
       setText('power-sim-value', kw.toFixed(2));
-      setText('power-sim-cost', `${formatCurrency(cost)}/año`);
+      // Mostramos €/mes (comparable con el ahorro mensual del cambio de
+      // tarifa) y dejamos el €/año debajo como referencia.
+      setText('power-sim-cost', `${formatCurrency(cost / 12)}/mes`);
+      const sub = $('power-sim-cost-sub');
+      if (sub) sub.textContent = `${formatCurrency(cost)}/año en potencia`;
       const deltaEl = $('power-sim-delta');
       if (deltaEl) {
         if (Math.abs(delta) < 1) {
           deltaEl.textContent = 'igual que tu potencia actual';
           deltaEl.className = 'power-sim-delta';
         } else if (delta > 0) {
-          deltaEl.textContent = `+${formatCurrency(delta)}/año vs ahora`;
+          deltaEl.textContent = `+${formatCurrency(delta / 12)}/mes vs ahora`;
           deltaEl.className = 'power-sim-delta delta-up';
         } else {
-          deltaEl.textContent = `−${formatCurrency(-delta)}/año vs ahora`;
+          deltaEl.textContent = `−${formatCurrency(-delta / 12)}/mes vs ahora`;
           deltaEl.className = 'power-sim-delta delta-down';
         }
       }
@@ -1493,19 +1516,22 @@
     const el = $('power-sim-reco');
     if (!el) return;
     if (reco.type === 'up') {
+      const mes = reco.deltaCost / 12;
       el.className = 'power-sim-reco reco-warn';
-      el.innerHTML = `<span class="reco-headline">⚡ Te conviene SUBIR la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
-        Tu pico de consumo fue de <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, superando tu potencia contratada (${actualKw.toFixed(2)} kW). El ICP puede saltarte la luz al pasar de ese umbral.
-        <span class="reco-impact">Coste adicional estimado: +${formatCurrency(reco.deltaCost)}/año</span>`;
+      el.innerHTML = `<span class="reco-headline">⚡ Te conviene subir la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
+        Tu pico de consumo fue <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, supera la potencia contratada (${actualKw.toFixed(2)} kW).
+        <span class="reco-warn-detail"><strong>Si NO la subes:</strong> el ICP te corta la luz cuando enciendas varios aparatos potentes a la vez (horno, vitrocerámica, lavavajillas…). No te cuesta dinero, pero te quedas a oscuras puntualmente.</span>
+        <span class="reco-impact">Coste extra al subirla: <strong>+${formatCurrency(mes)}/mes</strong> (${formatCurrency(reco.deltaCost)}/año).</span>`;
     } else if (reco.type === 'down') {
+      const mes = -reco.deltaCost / 12;
       el.className = 'power-sim-reco reco-save';
-      el.innerHTML = `<span class="reco-headline">💰 Te conviene BAJAR la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
-        Tu pico fue de <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, muy por debajo de tu potencia contratada (${actualKw.toFixed(2)} kW). Estás pagando de más por capacidad que no usas.
-        <span class="reco-impact">Ahorro estimado: ${formatCurrency(-reco.deltaCost)}/año</span>`;
+      el.innerHTML = `<span class="reco-headline">💰 Te conviene bajar la potencia a ${reco.suggestedKw.toFixed(2)} kW</span>
+        Tu pico fue <strong>${reco.pmaxKw.toFixed(2)} kW</strong>, muy por debajo de tu potencia contratada (${actualKw.toFixed(2)} kW). Estás pagando capacidad que no usas.
+        <span class="reco-impact">Ahorro al bajarla: <strong>${formatCurrency(mes)}/mes</strong> (${formatCurrency(-reco.deltaCost)}/año).</span>`;
     } else {
       el.className = 'power-sim-reco reco-ok';
-      el.innerHTML = `<span class="reco-headline">✓ Tu potencia contratada es razonable</span>
-        Tu pico fue de ${reco.pmaxKw.toFixed(2)} kW y tienes ${actualKw.toFixed(2)} kW contratados — margen adecuado, ni te quedas corto ni pagas de más.`;
+      el.innerHTML = `<span class="reco-headline">✓ Tu potencia contratada es la correcta</span>
+        Tu pico fue ${reco.pmaxKw.toFixed(2)} kW y tienes ${actualKw.toFixed(2)} kW contratados — margen adecuado, ni te quedas corto ni pagas de más.`;
     }
   }
 
@@ -1617,6 +1643,16 @@
     if (offer.hasDiscount && offer.discountAmount >= 20) {
       features.push('<span class="slide-tag tag-discount">🎁 Descuento de bienvenida</span>');
     }
+    // Si el usuario tiene autoconsumo, indicamos si la oferta lo compensa
+    // según el flag oficial de la CNMC.
+    const userHasAutoconsumo = qrData && qrData.excedentes > 0;
+    if (userHasAutoconsumo) {
+      if (offer.autoconsumo) {
+        features.push('<span class="slide-tag tag-green">☀ Compensa excedentes</span>');
+      } else {
+        features.push('<span class="slide-tag tag-warn">☀ No compensa excedentes</span>');
+      }
+    }
 
     const diff = cur.pago - offer.amount;
     const pct = cur.pago > 0 ? Math.round((diff / cur.pago) * 100) : 0;
@@ -1666,6 +1702,15 @@
     // Acordeón con desglose detallado (tabla "¿por qué te ahorras X?")
     const breakdown = buildBreakdownTable(offer, cur, qrData);
 
+    // Atenuamos las filas IDÉNTICAS al contrato actual para que las
+    // diferencias destaquen. Potencia siempre la asumimos igual; tipo y
+    // permanencia se comparan dinámicamente.
+    const tipoNuevoLabel = 'Precio fijo';
+    const permNuevoLabel = offer.hasPenalty ? '12 meses' : 'Sin permanencia';
+    const tipoSame = tipoNuevoLabel === cur.tipoLabel;
+    const permSame = permNuevoLabel === cur.permanencia;
+    const SAME = '<span class="row-same-tag">igual</span>';
+
     return `
       <article class="offers-proposed-slide${offer.suspect ? ' suspect' : ''}" data-rank="${rank}">
         <div class="offers-col-tag offers-col-tag-new">Propuesta ${rankBadge}</div>
@@ -1673,11 +1718,11 @@
         <div class="offers-col-subtitle">${offer.offerName || ''}</div>
         <div class="slide-tags">${features.join('')}</div>
         <ul class="offers-col-rows">
-          <li class="offers-col-row" data-row="tipo"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${glossaryTerm('precio-fijo', 'Precio fijo')}</span></li>
-          <li class="offers-col-row" data-row="potencia"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.potencia}</span></li>
-          <li class="offers-col-row ${offer.hasPenalty && cur.permanencia === 'Sin permanencia' ? 'row-warn' : ''}" data-row="permanencia">
+          <li class="offers-col-row ${tipoSame ? 'row-same' : ''}" data-row="tipo"><span class="offers-col-key">Tipo</span><span class="offers-col-value">${glossaryTerm('precio-fijo', tipoNuevoLabel)}${tipoSame ? ' ' + SAME : ''}</span></li>
+          <li class="offers-col-row row-same" data-row="potencia"><span class="offers-col-key">Potencia</span><span class="offers-col-value">${cur.potencia} ${SAME}</span></li>
+          <li class="offers-col-row ${offer.hasPenalty && cur.permanencia === 'Sin permanencia' ? 'row-warn' : ''} ${permSame ? 'row-same' : ''}" data-row="permanencia">
             <span class="offers-col-key">Permanencia</span>
-            <span class="offers-col-value">${offer.hasPenalty ? '12 meses' : 'Sin permanencia'}</span>
+            <span class="offers-col-value">${permNuevoLabel}${permSame ? ' ' + SAME : ''}</span>
           </li>
           <li class="offers-col-row ${offer.isGreen ? 'row-good' : ''}" data-row="origen">
             <span class="offers-col-key">Origen</span>
@@ -1913,7 +1958,9 @@
     const pill = $('analisis-context-pill');
     const pillVal = $('analisis-context-offer');
     if (pill && pillVal) {
-      pillVal.textContent = `${offer.company}${offer.offerName ? ' · ' + offer.offerName : ''}`;
+      // Solo nombre de comercializadora — el nombre de la tarifa lo alargaba
+      // demasiado en mobile y rompía la línea con feo wrapping.
+      pillVal.textContent = offer.company;
       pill.hidden = false;
     }
   }
@@ -2027,7 +2074,7 @@
     // Meta: posición usuario
     setText('offers-total-count', results.totalOffers);
     setText('offers-user-rank', results.userRankPosition
-      ? `puesto ~${results.userRankPosition}`
+      ? `puesto ${results.userRankPosition}`
       : 'puesto desconocido');
 
     // Nota contextual según casuística (rank-1, already-cheap, big-savings, etc.)
@@ -2322,12 +2369,11 @@
 
   function renderCaseBigSavings(results, qrData, scenario) {
     const d = heroDisplay(results);
-    const pct = Math.round(d.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
-      'Ahorro disponible',
+      'Tu ahorro anual',
       `${formatCurrency(d.savings)}/año`,
       `cambiando a <strong>${d.offer.company}</strong>`,
-      `Estás pagando un <strong>${pct}% de más</strong> que esta oferta`
+      `Pagas <strong>${formatCurrency(d.savings / 12)} más cada mes</strong> de lo que deberías`
     );
     applyResultChrome({
       heroClassRemove: ['no-savings'],
@@ -2342,12 +2388,11 @@
 
   function renderCaseNormalSavings(results, qrData, scenario) {
     const d = heroDisplay(results);
-    const pct = Math.round(d.savings / Math.max(results.current.amount, 1) * 100);
     setHero(
-      'Ahorro disponible',
+      'Tu ahorro anual',
       `${formatCurrency(d.savings)}/año`,
       `cambiando a <strong>${d.offer.company}</strong>`,
-      `${formatCurrency(d.savings / 12)}/mes · estás pagando un ${pct}% de más`
+      `Pagas <strong>${formatCurrency(d.savings / 12)} más cada mes</strong> de lo que deberías`
     );
     applyResultChrome({
       heroClassRemove: ['no-savings', 'savings-big'],
@@ -2369,18 +2414,23 @@
     setText('suspect-card-company', suspect.company);
     setText('suspect-card-tariff', suspect.offerName);
     const totalSaving = results.current.amount - suspect.amount;
-    setText('suspect-card-saving', `Ahorro teórico: ${formatCurrency(totalSaving)}/año`);
-    setText('suspect-card-aftermath', `vs ${formatCurrency(suspect.amount)}/año esta oferta`);
+    const lowerName = (suspect.offerName || '').toLowerCase();
+    const conditionShort = lowerName.includes('solar')
+      ? 'sólo si instalas placas con ellos'
+      : 'sólo si cumples sus requisitos';
+    // Copy directo: el precio absoluto + ahorro entre paréntesis, y el "pero…"
+    // pegado para que se entienda en un vistazo.
+    setText('suspect-card-saving', `${formatCurrency(suspect.amount)}/año (${formatCurrency(totalSaving)} menos)`);
+    setText('suspect-card-aftermath', `…pero ${conditionShort}`);
     const reasons = suspect.suspectReasons || [];
     const explainParts = [];
-    const lowerName = (suspect.offerName || '').toLowerCase();
     if (lowerName.includes('solar')) {
-      explainParts.push('Es una <strong>promoción condicional</strong>: requiere instalar placas solares contratándolas con esta comercializadora. Probablemente no aplica si ya tienes placas con otra empresa.');
+      explainParts.push(`Esta tarifa es una <strong>promoción para autoconsumo</strong>: el descuento sólo aplica si instalas las placas solares contratándolas con ${suspect.company}. Si ya tienes placas con otra empresa o no las quieres instalar, <strong>esta oferta no te sirve</strong>.`);
     } else if (reasons.some(r => r.type === 'suspect-name')) {
-      explainParts.push('El nombre sugiere una <strong>promoción condicional</strong> (cliente nuevo, requisitos especiales, etc.). Verifica los requisitos en la web de la comercializadora.');
+      explainParts.push('El nombre sugiere una <strong>promoción condicional</strong> (cliente nuevo, requisitos especiales). Verifica los requisitos en la web de la comercializadora antes de contar con este ahorro.');
     }
-    if (reasons.some(r => r.type === 'price-outlier')) {
-      explainParts.push('El precio es <strong>anormalmente bajo</strong> comparado con el resto del mercado. Suele indicar que el ahorro real depende de condiciones que la CNMC no muestra.');
+    if (reasons.some(r => r.type === 'price-outlier') && !lowerName.includes('solar')) {
+      explainParts.push('El precio es <strong>anormalmente bajo</strong> comparado con el resto del mercado. Suele indicar condiciones que la CNMC no muestra.');
     }
     if (suspect.validez) {
       explainParts.push(`<em>Letra pequeña CNMC:</em> ${suspect.validez}`);
@@ -2594,35 +2644,23 @@
   }
 
   // --- Personalized insight ---
-  // El par\u00e1metro displayOffer permite generar el diagn\u00f3stico para CUALQUIER
-  // oferta del carrusel, no s\u00f3lo para la "mejor". Cuando el usuario navega
-  // el carrusel, refrescamos esto con la oferta visible. Si no se pasa,
-  // usamos la leg\u00edtima/best por defecto (comportamiento hist\u00f3rico).
+  // Insight = an\u00e1lisis de POR QU\u00c9 esta oferta encaja con TU perfil. Evita
+  // repetir el "est\u00e1s pagando X / podr\u00edas pagar Y" del hero \u2014 esos datos
+  // ya est\u00e1n arriba en grande. Aqu\u00ed explicamos contexto y rasgos del perfil.
   function buildInsight(results, qrData, displayOffer) {
     const parts = [];
     const current = results.current;
     const best = displayOffer || results.legitimateBest || results.best;
-    const savings = current.amount - best.amount;
 
     if (best.suspect) {
-      parts.push(`<strong>${best.company} \u00b7 ${best.offerName || ''}</strong> aparece como la m\u00e1s barata (${formatCurrency(best.amount)}/a\u00f1o), pero es una <strong>promoci\u00f3n condicional</strong>. Verifica los requisitos en la web de la comercializadora antes de contar con ese ahorro.`);
+      parts.push(`<strong>${best.company} \u00b7 ${best.offerName || ''}</strong> aparece como la m\u00e1s barata (${formatCurrency(best.amount)}/a\u00f1o), pero es una <strong>promoci\u00f3n condicional</strong>. Verifica los requisitos antes de contar con ese ahorro.`);
       if (qrData) addConsumoProfile(parts, qrData);
       return parts.join(' ');
     }
 
-    const bestName = best.offerName ? `<strong>${best.offerName}</strong> de ${best.company}` : best.company;
-    parts.push(`Est\u00e1s pagando <strong>${formatCurrency(current.amount)}/a\u00f1o</strong> (${formatCurrency(current.amount / 12)}/mes) con ${current.company}.`);
-
-    if (savings > 0) {
-      parts.push(`Con ${bestName} pagar\u00edas <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> &mdash; <strong>${formatCurrency(savings)} menos al a\u00f1o</strong> (${formatCurrency(savings / 12)}/mes).`);
-    } else if (savings < 0) {
-      parts.push(`Con ${bestName} pagar\u00edas <strong>${formatCurrency(best.amount)}/a\u00f1o</strong> &mdash; ser\u00edan <strong>${formatCurrency(-savings)} m\u00e1s al a\u00f1o</strong> de los que pagas hoy.`);
-    } else {
-      parts.push(`Con ${bestName} pagar\u00edas pr\u00e1cticamente lo mismo que ahora.`);
-    }
-
-    if (results.currentCompanyRank) {
-      parts.push(`Tu comercializadora actual (${current.company}) tiene su mejor oferta en el puesto #${results.currentCompanyRank} de ${results.totalOffers}.`);
+    // Si la comercializadora actual est\u00e1 en el ranking, contextualizar.
+    if (results.currentCompanyRank && results.currentCompanyRank > 1) {
+      parts.push(`<strong>${current.company}</strong> tiene su mejor oferta en el puesto #${results.currentCompanyRank} de ${results.totalOffers} \u2014 hay tarifas m\u00e1s baratas, incluso de la misma comercializadora si no quieres cambiarte.`);
     }
 
     if (qrData) addConsumoProfile(parts, qrData);
@@ -2680,18 +2718,19 @@
     'DOMESTICA':         'https://www.visaliaenergia.com/',
   };
 
+  // Las URLs específicas de tarifas (`/luz/planes-luz`, `/tarifas-luz`, etc.)
+  // rompen con frecuencia cuando las comercializadoras cambian su web.
+  // Estrategia: usar SIEMPRE Google search con la query exacta (nombre de
+  // comercializadora + nombre de la oferta). Es lo único que no rompe nunca,
+  // y Google suele poner el resultado oficial el primero.
   function getCompanyUrl(companyName, offerName) {
-    if (!companyName) {
-      return `https://www.google.com/search?q=${encodeURIComponent('tarifa luz España')}`;
+    const parts = [];
+    if (companyName) parts.push(companyName);
+    if (offerName && offerName.toLowerCase() !== (companyName || '').toLowerCase()) {
+      parts.push(offerName);
     }
-    const upper = companyName.toUpperCase();
-    // Buscar coincidencia (longest match first para evitar matches parciales erróneos)
-    const keys = Object.keys(COMPANY_WEBSITES).sort((a, b) => b.length - a.length);
-    for (const key of keys) {
-      if (upper.includes(key)) return COMPANY_WEBSITES[key];
-    }
-    // Fallback Google
-    const q = encodeURIComponent(`${companyName} ${offerName || ''} tarifa luz`);
+    parts.push('tarifa luz');
+    const q = encodeURIComponent(parts.join(' '));
     return `https://www.google.com/search?q=${q}`;
   }
 
