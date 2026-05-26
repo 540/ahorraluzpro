@@ -37,6 +37,11 @@
   function removeClass(id, cls) { const el = $(id); if (el) el.classList.remove(cls); }
   function setDisplay(id, value) { const el = $(id); if (el) el.style.display = value; }
 
+  // Defensa: ocultar la card de oferta sospechosa nada más cargar. Si un
+  // HTML cacheado llegara sin el atributo `hidden`, esto garantiza que no
+  // se vea vacía con placeholders hasta que processQR decida mostrarla.
+  (function () { const sc = $('suspect-offer-card'); if (sc) sc.hidden = true; })();
+
   // --- Screens ---
   const screens = {
     landing: document.getElementById('screen-landing'),
