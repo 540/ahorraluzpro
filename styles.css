@@ -800,6 +800,10 @@ html, body {
   flex-direction: column;
   gap: 10px;
 }
+/* `display: flex` anula el atributo `hidden` del navegador (origen autor
+   gana sobre UA), así que la card seguía visible con placeholders "—" aunque
+   el JS hiciera card.hidden = true. Forzamos display:none cuando está oculta. */
+.suspect-offer-card[hidden] { display: none !important; }
 .suspect-card-header {
   display: flex;
   align-items: center;
