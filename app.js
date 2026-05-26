@@ -2760,37 +2760,39 @@
   }
 
   // --- BBDD de webs oficiales por comercializadora ---
-  // Mapping comercializadora → su web oficial (home). Usamos la HOME, no la
-  // página de tarifas, a propósito: las URLs profundas de tarifas rompen
-  // constantemente (en una verificación ~50% devolvían 404, incluida la de la
-  // oferta que más sale), mientras que el dominio raíz es estable. Las claves
-  // son substrings que se buscan en el nombre normalizado (sin tildes ni
-  // mayúsculas). Si no hay match, se cae a búsqueda de Google con nombre + tarifa.
+  // Mapping comercializadora → su sección de tarifas/ofertas de luz cuando
+  // existe y responde; si no, la home. NO enlazamos a una tarifa CONCRETA:
+  // esas URLs profundas se pudren rápido (en una verificación previa ~50%
+  // daban 404). Todas las de abajo verificadas por HTTP el 2026-05-27 (200,
+  // o 403 por anti-bot —Iberdrola, Holaluz, Gana— que en navegador real
+  // carga). Las claves son substrings que se buscan en el nombre normalizado
+  // (sin tildes ni mayúsculas). Si no hay match → búsqueda de Google.
   const COMPANY_WEBSITES = {
-    'IBERDROLA':         'https://www.iberdrola.es/',
-    'ENDESA':            'https://www.endesa.com/',
-    'NATURGY':           'https://www.naturgy.es/',
-    'REPSOL':            'https://www.repsol.es/',
-    'HOLALUZ':           'https://www.holaluz.com/',
-    'TOTAL':             'https://www.totalenergies.es/',
-    'OCTOPUS':           'https://octopusenergy.es/',
+    'IBERDROLA':         'https://www.iberdrola.es/luz/planes-luz',
+    'ENDESA':            'https://www.endesa.com/es/luz/tarifas-luz',
+    'NATURGY':           'https://www.naturgy.es/hogar/luz',
+    'REPSOL':            'https://www.repsol.es/particulares/',
+    'HOLALUZ':           'https://www.holaluz.com/luz',
+    'TOTAL':             'https://www.totalenergies.es/clientes-particulares/luz',
+    'OCTOPUS':           'https://octopusenergy.es/precios',
     'IMAGINA':           'https://www.imaginaenergia.com/',
-    'LUCERA':            'https://lucera.es/',
+    'LUCERA':            'https://lucera.es/tarifas-luz',
     'PLENITUDE':         'https://www.eniplenitude.com/',
-    'EDP':               'https://www.edpenergia.es/',
-    'ACCIONA':           'https://www.acciona-energia.com/',
-    'ENERGYA VM':        'https://www.energyavm.es/',
-    'ENERGYA':           'https://www.energyavm.es/',
-    'GANA ENERGÍA':      'https://ganaenergia.com/',
-    'GANA ENERGIA':      'https://ganaenergia.com/',
-    'AURA ENERGIA':      'https://www.aura-energia.com/',
-    'AURA ENERGÍA':      'https://www.aura-energia.com/',
+    'EDP':               'https://www.edpenergia.es/es/hogares/tu-tarifa-luz/',
+    'ACCIONA':           'https://www.acciona-energia.com/es/',
+    'ENERGYA VM':        'https://www.energyavm.es/luz/',
+    'ENERGYA':           'https://www.energyavm.es/luz/',
+    'GANA ENERGÍA':      'https://ganaenergia.com/tarifas-luz/',
+    'GANA ENERGIA':      'https://ganaenergia.com/tarifas-luz/',
+    'AURA ENERGIA':      'https://www.aura-energia.com/tarifas-luz/',
+    'AURA ENERGÍA':      'https://www.aura-energia.com/tarifas-luz/',
     'PEPENERGY':         'https://www.pepenergy.com/',
-    'GANA':              'https://ganaenergia.com/',
-    'CEPSA':             'https://www.cepsa.es/',
-    'AXPO':              'https://www.axpo.com/',
+    'GANA':              'https://ganaenergia.com/tarifas-luz/',
+    'CEPSA':             'https://www.moeve.es/',
+    'MOEVE':             'https://www.moeve.es/',
+    'AXPO':              'https://www.axpo.com/es/es.html',
     'PLÉNITUDE':         'https://www.eniplenitude.com/',
-    'AUDAX':             'https://www.audaxrenovables.com/',
+    'AUDAX':             'https://www.audaxrenovables.com/particulares/',
     'ENERGYASSET':       'https://www.energyasset.es/',
     'VISALIA':           'https://www.visaliaenergia.com/',
     'DOMÉSTICA':         'https://www.visaliaenergia.com/',
