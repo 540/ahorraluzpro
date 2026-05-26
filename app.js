@@ -2759,49 +2759,76 @@
     }
   }
 
-  // --- BBDD de URLs oficiales por comercializadora ---
-  // Mapping comercializadora → página oficial de tarifas. Las claves son
-  // substring que se buscan en el nombre (case-insensitive). Si no hay match,
-  // se cae a búsqueda de Google con el nombre + tarifa.
-  // Revisar URLs cada 6 meses por si cambian.
+  // --- BBDD de webs oficiales por comercializadora ---
+  // Mapping comercializadora → su web oficial (home). Usamos la HOME, no la
+  // página de tarifas, a propósito: las URLs profundas de tarifas rompen
+  // constantemente (en una verificación ~50% devolvían 404, incluida la de la
+  // oferta que más sale), mientras que el dominio raíz es estable. Las claves
+  // son substrings que se buscan en el nombre normalizado (sin tildes ni
+  // mayúsculas). Si no hay match, se cae a búsqueda de Google con nombre + tarifa.
   const COMPANY_WEBSITES = {
-    'IBERDROLA':         'https://www.iberdrola.es/luz/planes-luz',
-    'ENDESA':            'https://www.endesa.com/es/luz/tarifas-luz',
-    'NATURGY':           'https://www.naturgy.es/hogar/luz/tarifa_luz',
-    'REPSOL':            'https://www.repsol.es/particulares/luz-y-gas/tarifas-luz-gas/',
-    'HOLALUZ':           'https://www.holaluz.com/luz',
-    'TOTAL':             'https://www.totalenergies.es/clientes-particulares/luz',
-    'OCTOPUS':           'https://octopusenergy.es/tarifas-luz',
-    'IMAGINA':           'https://www.imaginaenergia.com/luz/tarifas',
-    'LUCERA':            'https://lucera.es',
-    'PLENITUDE':         'https://www.eniplenitude.com/es-es/luz',
-    'EDP':               'https://www.edpenergia.es/es/hogares/tu-tarifa-luz/',
-    'ACCIONA':           'https://www.acciona-energia.com/clientes-particulares/tarifas-luz/',
-    'ENERGYA VM':        'https://www.energyavm.es/particulares/tarifas-electricidad/',
-    'ENERGYA':           'https://www.energyavm.es/particulares/tarifas-electricidad/',
-    'GANA ENERGÍA':      'https://ganaenergia.com/tarifas-luz/',
-    'GANA ENERGIA':      'https://ganaenergia.com/tarifas-luz/',
-    'AURA ENERGIA':      'https://www.aura-energia.com/tarifas-luz/',
-    'AURA ENERGÍA':      'https://www.aura-energia.com/tarifas-luz/',
-    'PEPENERGY':         'https://www.pepenergy.com/luz',
-    'GANA':              'https://ganaenergia.com/tarifas-luz/',
-    'CEPSA':             'https://www.cepsa.es/es/particulares/casa/luz',
-    'AXPO':              'https://www.axpo.com/es/es/empresa/luz',
-    'PLÉNITUDE':         'https://www.eniplenitude.com/es-es/luz',
-    'AUDAX':             'https://www.audaxrenovables.com/particulares/',
-    'GAOLANIA':          'https://www.gaolania.com/',
+    'IBERDROLA':         'https://www.iberdrola.es/',
+    'ENDESA':            'https://www.endesa.com/',
+    'NATURGY':           'https://www.naturgy.es/',
+    'REPSOL':            'https://www.repsol.es/',
+    'HOLALUZ':           'https://www.holaluz.com/',
+    'TOTAL':             'https://www.totalenergies.es/',
+    'OCTOPUS':           'https://octopusenergy.es/',
+    'IMAGINA':           'https://www.imaginaenergia.com/',
+    'LUCERA':            'https://lucera.es/',
+    'PLENITUDE':         'https://www.eniplenitude.com/',
+    'EDP':               'https://www.edpenergia.es/',
+    'ACCIONA':           'https://www.acciona-energia.com/',
+    'ENERGYA VM':        'https://www.energyavm.es/',
+    'ENERGYA':           'https://www.energyavm.es/',
+    'GANA ENERGÍA':      'https://ganaenergia.com/',
+    'GANA ENERGIA':      'https://ganaenergia.com/',
+    'AURA ENERGIA':      'https://www.aura-energia.com/',
+    'AURA ENERGÍA':      'https://www.aura-energia.com/',
+    'PEPENERGY':         'https://www.pepenergy.com/',
+    'GANA':              'https://ganaenergia.com/',
+    'CEPSA':             'https://www.cepsa.es/',
+    'AXPO':              'https://www.axpo.com/',
+    'PLÉNITUDE':         'https://www.eniplenitude.com/',
+    'AUDAX':             'https://www.audaxrenovables.com/',
     'ENERGYASSET':       'https://www.energyasset.es/',
     'VISALIA':           'https://www.visaliaenergia.com/',
     'DOMÉSTICA':         'https://www.visaliaenergia.com/',
     'DOMESTICA':         'https://www.visaliaenergia.com/',
   };
 
-  // Las URLs específicas de tarifas (`/luz/planes-luz`, `/tarifas-luz`, etc.)
-  // rompen con frecuencia cuando las comercializadoras cambian su web.
-  // Estrategia: usar SIEMPRE Google search con la query exacta (nombre de
-  // comercializadora + nombre de la oferta). Es lo único que no rompe nunca,
-  // y Google suele poner el resultado oficial el primero.
+  // Normaliza un nombre para comparar: mayúsculas + sin tildes. Así el match
+  // contra COMPANY_WEBSITES no depende de acentos ni de mayúsculas.
+  function normalizeForMatch(s) {
+    return (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  // Claves del mapa precalculadas y ordenadas por longitud descendente, para
+  // que gane la coincidencia más específica y evitar colisiones por substring
+  // (ENERGYASSET debe ganar a ENERGYA; ENERGYA VM debe ganar a ENERGYA).
+  const COMPANY_WEBSITE_KEYS = Object.keys(COMPANY_WEBSITES)
+    .map(k => ({ norm: normalizeForMatch(k), url: COMPANY_WEBSITES[k] }))
+    .sort((a, b) => b.norm.length - a.norm.length);
+
+  // Devuelve la web oficial (home) de la comercializadora si la reconocemos
+  // por nombre (match por substring normalizado). Si no, null.
+  function lookupCompanyWebsite(companyName) {
+    const norm = normalizeForMatch(companyName);
+    if (!norm) return null;
+    for (const entry of COMPANY_WEBSITE_KEYS) {
+      if (entry.norm && norm.includes(entry.norm)) return entry.url;
+    }
+    return null;
+  }
+
+  // Enlace del CTA "Cambiar a X". Preferimos la web oficial de la
+  // comercializadora (mejor UX: el usuario aterriza donde puede contratar).
+  // Si no la tenemos mapeada, caemos a una búsqueda de Google con el nombre
+  // exacto — que nunca rompe y suele poner el resultado oficial el primero.
   function getCompanyUrl(companyName, offerName) {
+    const official = lookupCompanyWebsite(companyName);
+    if (official) return official;
+
     const parts = [];
     if (companyName) parts.push(companyName);
     if (offerName && offerName.toLowerCase() !== (companyName || '').toLowerCase()) {
