@@ -2477,7 +2477,13 @@
   function renderSuspectCard(suspect, results) {
     const card = $('suspect-offer-card');
     if (!card) return;
-    if (!suspect) { card.hidden = true; return; }
+    // Blindaje: sólo mostramos la card si hay una oferta sospechosa REAL con
+    // datos completos. Sin esto, un estado intermedio o un HTML cacheado
+    // desincronizado dejaba la card visible con placeholders "—".
+    if (!suspect || !suspect.company || !(suspect.amount > 0)) {
+      card.hidden = true;
+      return;
+    }
     setText('suspect-card-company', suspect.company);
     setText('suspect-card-tariff', suspect.offerName);
     const totalSaving = results.current.amount - suspect.amount;
