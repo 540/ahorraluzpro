@@ -24,7 +24,7 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260526j">
+  <link rel="stylesheet" href="styles.css?v=20260526k">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 
   <!-- Vercel Web Analytics: pageviews + eventos custom (track) sin cookies.
@@ -35,6 +35,50 @@
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- === Analítica EN PRUEBAS: Umami + PostHog (en paralelo con Vercel) ===
+       Las dos disparan los mismos eventos custom que Vercel (ver track() en
+       app.js) para poder comparar dashboards 1:1. Ambas privacy-first: Umami
+       no usa cookies; PostHog va en modo cookieless (persistence: memory) con
+       datos en la UE (Frankfurt) y session replay DESACTIVADO (la pantalla de
+       resultado muestra CUPS/importes — dato sensible).
+       Para activarlas: pega los dos IDs marcados abajo. Son tokens públicos de
+       cliente (es normal exponerlos en el navegador). Solo cargan en producción. -->
+  <script>
+    (function () {
+      // ───── CONFIG: pega aquí los dos IDs ─────
+      var UMAMI_WEBSITE_ID = '2fb28e0a-ced2-44c9-b7cd-ba4c025ff232'; // panel Umami Cloud
+      var POSTHOG_KEY      = 'phc_xXA6WYTkzgf7RcFiwfNZ2jFbgVgj8gMGi8PyYhkuLbmY'; // project key
+      // ─────────────────────────────────────────
+
+      var host = location.hostname;
+      var IS_PROD = host !== 'localhost' && host !== '127.0.0.1' && host !== '';
+      if (!IS_PROD) return; // no contaminar datos desde local
+
+      // Umami Cloud (sin cookies, sin banner). Se inyecta solo si hay ID real.
+      if (UMAMI_WEBSITE_ID.indexOf('TODO') !== 0) {
+        var u = document.createElement('script');
+        u.defer = true;
+        u.src = 'https://cloud.umami.is/script.js';
+        u.setAttribute('data-website-id', UMAMI_WEBSITE_ID);
+        document.head.appendChild(u);
+      }
+
+      // PostHog Cloud EU. Solo se inicializa con una key real (phc_...).
+      if (POSTHOG_KEY.indexOf('phc_') === 0) {
+        !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Mi Ri init Vi Gi Rr Wi Ji Bi capture calculateEventProperties tn register register_once register_for_session unregister unregister_for_session an getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync un identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty nn Xi createPersonProfile setInternalOrTestUser sn Hi cn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Ki debug Lr rn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+        posthog.init(POSTHOG_KEY, {
+          api_host: 'https://eu.i.posthog.com', // datos en la UE (Frankfurt)
+          persistence: 'memory',                // sin cookies ni localStorage → sin banner
+          person_profiles: 'identified_only',
+          autocapture: false,                   // solo pageview + eventos custom (comparación 1:1)
+          capture_pageview: true,
+          capture_pageleave: false,
+          disable_session_recording: true       // replay OFF: la pantalla muestra CUPS/importes
+        });
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -636,6 +680,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script src="app.js?v=20260526j"></script>
+  <script src="app.js?v=20260526k"></script>
 </body>
 </html>

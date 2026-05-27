@@ -4,17 +4,32 @@
 (function () {
   'use strict';
 
-  // --- Analytics (Vercel Web Analytics) ---
-  // Helper para enviar eventos custom. El stub de window.va está en index.html
-  // y encola las llamadas hasta que el script defer carga; aquí solo invocamos.
-  // En localhost el dashboard ignora los hits (modo debug), pero el helper sigue
-  // funcionando sin errores.
+  // --- Analytics (Vercel + Umami + PostHog en pruebas) ---
+  // Helper único que dispara cada evento custom a las tres herramientas a la
+  // vez, para comparar dashboards 1:1. Cada destino va en su propio try/catch:
+  // si una no está cargada o falla, las demás siguen y nunca rompe el flujo del
+  // usuario. Umami/PostHog solo existen en producción y solo si hay IDs (ver
+  // index.html); en localhost solo está el stub de Vercel (window.va).
   function track(name, props) {
+    var data = props || {};
+    // Vercel Web Analytics (ojo: custom events solo cuentan en plan Pro)
     try {
       if (typeof window.va === 'function') {
-        window.va('event', Object.assign({ name: name }, props || {}));
+        window.va('event', Object.assign({ name: name }, data));
       }
-    } catch (_) { /* nunca debe romper el flow del usuario */ }
+    } catch (_) {}
+    // Umami Cloud
+    try {
+      if (window.umami && typeof window.umami.track === 'function') {
+        window.umami.track(name, data);
+      }
+    } catch (_) {}
+    // PostHog Cloud EU
+    try {
+      if (window.posthog && typeof window.posthog.capture === 'function') {
+        window.posthog.capture(name, data);
+      }
+    } catch (_) {}
   }
 
   // --- DOM helpers defensivos ---
