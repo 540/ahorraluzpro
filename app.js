@@ -2065,6 +2065,9 @@
     // El re-render por cambio de filtro no es un "slide" del usuario: evitamos
     // que updateCarouselPosition lo cuente como carousel_slide.
     carouselState._lastTrackedIdx = 0;
+    // Analytics: el usuario filtró el carrusel (solo se llama desde el click
+    // en los chips de filtro, así que siempre es acción real).
+    track('filter_applied', { filter: filterKey, count: filtered.length });
     // Toggle chip active state
     document.querySelectorAll('.filter-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.filter === filterKey);
@@ -2584,6 +2587,7 @@
     if (!results.best) {
       document.getElementById('savings-hero').style.display = 'none';
       document.querySelector('.comparison-grid').style.display = 'none';
+      track('results_shown', { case: scenario.primaryCase, totalOffers: results.totalOffers || 0 });
       showScreen('result');
       return;
     }
@@ -2655,6 +2659,15 @@
     // En desktop, abrir las secciones desplegables automáticamente
     applyCollapsibleDefaults();
 
+    // Analytics: veredicto final del embudo — qué escenario ve el usuario y
+    // cuánto puede ahorrar. Datos agregados, sin PII.
+    track('results_shown', {
+      case: scenario.primaryCase,
+      savings: Math.round(results.legitimateSavings != null ? results.legitimateSavings : results.savings),
+      totalOffers: results.totalOffers,
+      rank: results.userRankPosition || null,
+      dual: results.heroMode === 'dual',
+    });
     showScreen('result');
   }
 
@@ -2726,6 +2739,9 @@
 
   // --- Error ---
   function showError(title, message, details) {
+    // Analytics: drop-off por error (escáner/QR/API). Solo el título — NUNCA
+    // los details, que pueden llevar la URL del QR (CUPS, importes = PII).
+    track('error_shown', { title: title });
     document.getElementById('error-title').textContent = title;
     document.getElementById('error-message').textContent = message;
     const detailsEl = document.getElementById('error-details');
