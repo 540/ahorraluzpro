@@ -24,12 +24,13 @@
       } catch (e) { /* localStorage no disponible */ }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260526k">
+  <link rel="stylesheet" href="styles.css?v=20260526l">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
 
-  <!-- Vercel Web Analytics: pageviews + eventos custom (track) sin cookies.
-       Stub para que las llamadas a window.va se encolen hasta que el script
-       cargue. Sólo se activa en producción (vercel.app o dominio propio);
+  <!-- Vercel Web Analytics: SOLO pageviews (gratis en Hobby, sin cookies).
+       Los eventos custom van a Umami/PostHog, no a Vercel: en Hobby los custom
+       events son de pago y no se capturan. Stub para encolar llamadas a
+       window.va hasta que el script cargue. Solo se activa en producción;
        en localhost queda en modo debug y los hits no llegan al dashboard. -->
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -680,6 +681,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script src="app.js?v=20260526k"></script>
+  <script src="app.js?v=20260526l"></script>
 </body>
 </html>
