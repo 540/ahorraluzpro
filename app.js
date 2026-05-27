@@ -2062,6 +2062,9 @@
     if (filterKey === 'noperm') filtered = filtered.filter(o => !o.hasPenalty);
     carouselState.offers = filtered;
     carouselState.currentIndex = 0;
+    // El re-render por cambio de filtro no es un "slide" del usuario: evitamos
+    // que updateCarouselPosition lo cuente como carousel_slide.
+    carouselState._lastTrackedIdx = 0;
     // Toggle chip active state
     document.querySelectorAll('.filter-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.filter === filterKey);
@@ -2153,6 +2156,10 @@
     // análisis reactivo encaja con lo que el hero ya está afirmando.
     const firstLegitIdx = carouselState.offers.findIndex(o => !o.suspect);
     carouselState.currentIndex = firstLegitIdx >= 0 ? firstLegitIdx : 0;
+    // No contar el render inicial como "scroll del usuario": marcamos el índice
+    // de arranque como ya trackeado, para que carousel_slide solo dispare cuando
+    // el usuario navega de verdad (flechas, dots, swipe).
+    carouselState._lastTrackedIdx = carouselState.currentIndex;
 
     // Meta: posición usuario
     setText('offers-total-count', results.totalOffers);
