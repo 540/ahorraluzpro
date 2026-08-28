@@ -43,7 +43,7 @@ Base: `https://comparador.cnmc.gob.es/api/`
 
 ### Endpoints confirmados (funcionan):
 - `GET publico/provincias` → lista provincias con código postal
-- `GET publico/curvas` → perfiles de consumo (id: 10 = "Estandar" 2.0TD)
+- `GET publico/curvas` → perfiles de consumo (id: 13 = "Estandar" 2.0TD; era 10 hasta ago 2026 — un id desfasado provoca 500 en ofertas)
 - `GET publico/preciosPVPC/ultimaFechaConTodo` → última fecha con datos
 - `GET publico/preciosPVPC/get/{fecha}` → precios PVPC por fecha
 - `GET publico/listadoPerfiles` → perfiles disponibles
@@ -92,7 +92,7 @@ Base: `https://comparador.cnmc.gob.es/api/`
   permanencia: 1,              // 1 = con permanencia, 2 = sin permanencia
   vivienda: true,              // es vivienda habitual
   factura: true,               // incluir datos factura
-  perfilConsumo: 10,           // 10 = Estandar 2.0TD
+  perfilConsumo: 13,           // 13 = Estandar 2.0TD (era 10 hasta ago 2026)
   revisionPrecios: 2,          // tipo revisión precios
   energiaAutoconsumo: 0,       // kWh autoconsumo
   potenciaAutoconsumo: 3.5,    // kW autoconsumo

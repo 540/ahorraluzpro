@@ -639,7 +639,9 @@
       precioConsumoMecanismoAjustePunta: 0,
       precioConsumoMecanismoAjusteLlano: 0,
       precioConsumoMecanismoAjusteValle: 0,
-      perfilConsumo: 10,
+      // Id del perfil "Estandar" 2.0TD en /curvas. La CNMC lo cambió de 10
+      // a 13 en agosto 2026 y un id inexistente hace que ofertas devuelva 500.
+      perfilConsumo: 13,
       dateInicio: dateInicio,
       dateFin: dateFin,
       tc: qrData.tipoContrato,
@@ -792,16 +794,39 @@
     }
   }
 
+  // El id del perfil "Estandar" ha cambiado ya una vez (10→13, ago 2026) y
+  // un id desfasado provoca 500 en ofertas. Ante un 500, resolvemos el id
+  // vigente desde /curvas y reintentamos una vez.
+  async function resolveCurrentPerfilConsumo() {
+    const response = await fetchFromApi('curvas');
+    if (!response.ok) throw new Error(`curvas ${response.status}`);
+    const curvas = await response.json();
+    const estandar = curvas.find(c => /estandar/i.test(c.nombrePerfil || '')) || curvas[0];
+    if (!estandar || estandar.id == null) throw new Error('sin perfil en /curvas');
+    return estandar.id;
+  }
+
   async function fetchOffers(params) {
-    const qs = Object.entries(params)
+    const buildPath = (p) => 'ofertas/electricidad?' + Object.entries(p)
       .filter(([, v]) => v != null && v !== '')
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
 
-    const path = `ofertas/electricidad?${qs}`;
     console.log('Fetching offers, params count:', Object.keys(params).length);
 
-    const response = await fetchFromApi(path);
+    let response = await fetchFromApi(buildPath(params));
+
+    if (response.status === 500) {
+      try {
+        const perfilVigente = await resolveCurrentPerfilConsumo();
+        if (perfilVigente !== params.perfilConsumo) {
+          console.warn(`perfilConsumo ${params.perfilConsumo} obsoleto, reintentando con ${perfilVigente}`);
+          response = await fetchFromApi(buildPath({ ...params, perfilConsumo: perfilVigente }));
+        }
+      } catch (e) {
+        // Si /curvas también falla, dejamos el 500 original.
+      }
+    }
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
